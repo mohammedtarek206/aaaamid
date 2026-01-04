@@ -12,16 +12,8 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
-const allowedOrigins = [process.env.CLIENT_URL, 'http://localhost:3000', 'http://127.0.0.1:3000'].filter(Boolean);
 app.use(cors({
-    origin: function (origin, callback) {
-        // Allow all origins for debugging if needed, or check against allowed list
-        if (!origin || allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.length === 0) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
+    origin: true, // Allow all origins for easier deployment setup
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -55,7 +47,7 @@ mongoose.connect(process.env.MONGODB_URI, mongooseOptions)
     })
     .catch(err => {
         console.error('❌ Could not connect to MongoDB', err);
-        process.exit(1);
+        // Don't exit in production/vercel to allow debugging
     });
 
 // Routes

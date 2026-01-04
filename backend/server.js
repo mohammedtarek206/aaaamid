@@ -12,6 +12,9 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
+// Optimize Mongoose for Serverless
+mongoose.set('bufferCommands', false);
+
 app.use(cors({
     origin: true, // Allow all origins for easier deployment setup
     credentials: true,
@@ -46,8 +49,11 @@ mongoose.connect(process.env.MONGODB_URI, mongooseOptions)
         }
     })
     .catch(err => {
-        console.error('❌ Could not connect to MongoDB', err);
-        // Don't exit in production/vercel to allow debugging
+        console.error('❌ MongoDB Connection Error Details:', {
+            message: err.message,
+            code: err.code,
+            name: err.name
+        });
     });
 
 // Routes

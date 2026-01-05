@@ -3,6 +3,13 @@ import './globals.css';
 export const metadata = {
     title: 'العميد - منصة الرياضيات التعليمية',
     description: 'منصة العميد لتعليم الرياضيات للمرحلة الثانوية - الأستاذ العميد',
+    viewport: {
+        width: 'device-width',
+        initialScale: 1,
+        maximumScale: 1,
+        userScalable: false,
+        viewportFit: 'cover',
+    },
 };
 
 export default function RootLayout({ children }) {

@@ -7,12 +7,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   BookOpen, Trophy, ShieldCheck, Users, PlayCircle, Star,
   ArrowLeft, GraduationCap, Play, Youtube, Info, CheckCircle2,
-  Facebook, MessageCircle, Instagram, Code, Target, Zap, Heart
+  Facebook, MessageCircle, Instagram, Code, Target, Zap, Heart, ArrowRight, CheckCircle, Shield, Sparkles, Clock
 } from 'lucide-react';
 
 export default function Home() {
   const [freeVideos, setFreeVideos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('courses');
+  const [playingId, setPlayingId] = useState(null);
 
   useEffect(() => {
     const fetchFreeVideos = async () => {
@@ -329,26 +331,31 @@ export default function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
                 viewport={{ once: true }}
-                className="glass-panel group overflow-hidden border-white/5 hover:border-gold/30 transition-all"
+                className="glass-panel group overflow-hidden border-white/5 hover:border-gold/30 transition-all cursor-pointer"
+                onClick={() => setPlayingId(v._id)}
               >
                 <div className="aspect-video relative overflow-hidden bg-black/40">
-                  <iframe
-                    className="absolute inset-0 w-full h-full opacity-0 group-hover:opacity-100 transition-opacity duration-700"
-                    src={`https://www.youtube.com/embed/${v.youtubeId}?autoplay=0`}
-                    title={v.title}
-                    frameBorder="0"
-                    allowFullScreen
-                  ></iframe>
-                  <div className="absolute inset-0 bg-black group-hover:opacity-0 transition-opacity duration-700 z-10 flex items-center justify-center">
-                    <img
-                      src={`https://img.youtube.com/vi/${v.youtubeId}/maxresdefault.jpg`}
-                      alt={v.title}
-                      className="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-1000"
-                    />
-                    <div className="absolute w-20 h-20 bg-red-600 rounded-full flex items-center justify-center text-white shadow-2xl group-hover:scale-125 transition-all">
-                      <Play size={32} fill="white" />
+                  {playingId === v._id ? (
+                    <iframe
+                      className="absolute inset-0 w-full h-full"
+                      src={`https://www.youtube.com/embed/${v.youtubeId}?autoplay=1`}
+                      title={v.title}
+                      frameBorder="0"
+                      allow="autoplay; fullscreen"
+                      allowFullScreen
+                    ></iframe>
+                  ) : (
+                    <div className="absolute inset-0 bg-black transition-opacity duration-700 z-10 flex items-center justify-center">
+                      <img
+                        src={`https://img.youtube.com/vi/${v.youtubeId}/maxresdefault.jpg`}
+                        alt={v.title}
+                        className="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-1000"
+                      />
+                      <div className="absolute w-20 h-20 bg-red-600 rounded-full flex items-center justify-center text-white shadow-2xl group-hover:scale-125 transition-all">
+                        <Play size={32} fill="white" />
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
                 <div className="p-10 text-right">
                   <h3 className="text-2xl font-black mb-4 group-hover:gold-text transition-colors">{v.title}</h3>
@@ -378,55 +385,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="py-32 bg-black/80 backdrop-blur-3xl border-t border-white/5 relative z-10">
-        <div className="container mx-auto px-6 text-center">
-          <div className="flex items-center justify-center gap-6 mb-16">
-            <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center gold-text border border-white/10">
-              <GraduationCap size={32} />
-            </div>
-            <span className="text-5xl font-black gold-text tracking-tighter">العميد</span>
-          </div>
-
-          <div className="flex justify-center gap-12 mb-20 text-gray-500 font-black text-sm uppercase tracking-widest">
-            <a href="#about" className="hover:text-gold transition-colors">عن المنصة</a>
-            <a href="#features" className="hover:text-gold transition-colors">المميزات</a>
-            <a href="#" className="hover:text-gold transition-colors">سياسة الخصوصية</a>
-          </div>
-
-          <div className="mb-24 flex justify-center gap-10">
-            <a href="https://www.facebook.com/share/1ajY85wpZL/" target="_blank" className="w-16 h-16 glass-panel flex items-center justify-center hover:bg-gold hover:text-black transition-all cursor-pointer rounded-2xl"><Facebook size={24} /></a>
-            <a href="https://youtube.com" target="_blank" className="w-16 h-16 glass-panel flex items-center justify-center hover:bg-gold hover:text-black transition-all cursor-pointer rounded-2xl"><Youtube size={24} /></a>
-            <a href="https://www.tiktok.com/@mr.ahmed.shendy.o?_r=1&_t=ZS-92sXIWCeZKk" target="_blank" className="w-16 h-16 glass-panel flex items-center justify-center hover:bg-gold hover:text-black transition-all cursor-pointer rounded-2xl">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" /></svg>
-            </a>
-            <a href="https://wa.me/201228056212" target="_blank" className="w-16 h-16 glass-panel flex items-center justify-center hover:bg-gold hover:text-black transition-all cursor-pointer rounded-2xl"><MessageCircle size={24} /></a>
-          </div>
-
-          <div className="pt-20 border-t border-white/5 flex flex-col items-center gap-10">
-            <div className="flex items-center gap-14 text-center">
-              <div className="space-y-2">
-                <div className="text-[10px] text-gray-600 font-black uppercase tracking-[5px]">Developer</div>
-                <div className="flex items-center gap-3">
-                  <div className="text-lg font-black text-gray-400">م. محمد طارق</div>
-                  <a href="https://wa.me/201284621015" target="_blank" className="w-8 h-8 rounded-lg bg-green-500/10 text-green-500 flex items-center justify-center hover:bg-green-500 hover:text-white transition-all">
-                    <MessageCircle size={16} />
-                  </a>
-                </div>
-              </div>
-              <div className="w-px h-12 bg-white/5"></div>
-              <div className="space-y-2">
-                <div className="text-[10px] text-gray-600 font-black uppercase tracking-[5px]">Contact</div>
-                <div className="text-lg font-black text-gray-400 tabular-nums">01284621015</div>
-              </div>
-            </div>
-            <div className="text-[10px] text-gray-700 font-black uppercase tracking-[10px] opacity-40">
-              Elite Educational Ecosystem &copy; 2024
-            </div>
-          </div>
-        </div>
-      </footer>
 
       <style jsx>{`
         .math-grid {

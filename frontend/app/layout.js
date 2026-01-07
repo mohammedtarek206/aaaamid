@@ -1,4 +1,5 @@
 import './globals.css';
+import Footer from '@/components/Footer';
 
 export const metadata = {
     title: 'العميد - منصة الرياضيات التعليمية',
@@ -22,6 +23,7 @@ export default function RootLayout({ children }) {
             </head>
             <body>
                 {children}
+                <Footer />
             </body>
         </html>
     );

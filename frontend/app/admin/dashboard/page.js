@@ -23,6 +23,9 @@ export default function AdminDashboard() {
     const [editMode, setEditMode] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [showAnswersModal, setShowAnswersModal] = useState(false);
+    const [selectedResult, setSelectedResult] = useState(null);
+    const [selectedExamQuestions, setSelectedExamQuestions] = useState([]);
     const router = useRouter();
 
     const extractDailymotionId = (input) => {
@@ -124,6 +127,17 @@ export default function AdminDashboard() {
     const logout = () => {
         localStorage.clear();
         router.push('/admin/login');
+    };
+
+    const fetchResultDetails = async (result) => {
+        try {
+            const res = await api.get(`/admin/exams/${result.examId._id}/questions`);
+            setSelectedExamQuestions(res.data);
+            setSelectedResult(result);
+            setShowAnswersModal(true);
+        } catch (err) {
+            alert('حدث خطأ أثناء تحميل تفاصيل الامتحان');
+        }
     };
 
     const getFilteredData = () => {
@@ -383,7 +397,12 @@ export default function AdminDashboard() {
                                                                     )}
                                                                 </>
                                                             ) : (
-                                                                <button onClick={() => window.open(`${api.defaults.baseURL}/admin/results/${item._id}/report`, '_blank')} className="p-2.5 bg-white/5 rounded-xl text-gray-500 hover:text-white transition-all"><ExternalLink size={16} /></button>
+                                                                <div className="flex items-center gap-3">
+                                                                    <button onClick={() => fetchResultDetails(item)} className="p-2.5 bg-white/5 rounded-xl text-gray-500 hover:text-white transition-all flex items-center gap-2">
+                                                                        <ExternalLink size={16} />
+                                                                        <span className="text-[10px] font-bold">عرض الإجابات</span>
+                                                                    </button>
+                                                                </div>
                                                             )}
                                                             <button onClick={() => handleDelete(item._id)} className="p-2.5 bg-red-500/5 rounded-xl text-red-500/50 hover:text-red-500 hover:bg-red-500/10 transition-all"><Trash2 size={16} /></button>
                                                         </div>
@@ -491,6 +510,73 @@ export default function AdminDashboard() {
                                         <button type="button" onClick={() => { setShowAddModal(false); setEditMode(false); }} className="btn-outline flex-1 !rounded-xl !py-4">إلغاء</button>
                                     </div>
                                 </form>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* View Answers Modal */}
+            <AnimatePresence>
+                {showAnswersModal && selectedResult && (
+                    <div className="fixed inset-0 z-[250] flex items-center justify-center p-6">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setShowAnswersModal(false)}
+                            className="absolute inset-0 bg-black/90 backdrop-blur-md"
+                        ></motion.div>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 30 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 30 }}
+                            className="w-full max-w-[800px] h-[80vh] bg-[#050505] border border-white/5 rounded-[40px] relative z-10 flex flex-col overflow-hidden shadow-2xl"
+                        >
+                            <div className="p-10 border-b border-white/5 flex justify-between items-center shrink-0">
+                                <div className="text-right">
+                                    <h3 className="text-2xl font-black gold-text mb-2">إجابات الطالب: {selectedResult.studentId?.name}</h3>
+                                    <div className="text-xs text-gray-500 font-bold">{selectedResult.examId?.title} • الدرجة: {selectedResult.score} / {selectedResult.totalPoints}</div>
+                                </div>
+                                <button onClick={() => setShowAnswersModal(false)} className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all">✕</button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-10 space-y-8 scrollbar-custom">
+                                {selectedExamQuestions.map((q, idx) => {
+                                    const studentAnswer = selectedResult.answers.find(a => a.questionId === q._id);
+                                    return (
+                                        <div key={q._id} className="p-8 rounded-[32px] bg-white/[0.02] border border-white/5">
+                                            <div className="flex items-start gap-6 mb-6">
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black shrink-0 ${studentAnswer?.isCorrect ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                                                    {idx + 1}
+                                                </div>
+                                                <p className="text-lg font-bold leading-relaxed">{q.text}</p>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mr-16">
+                                                {q.options.map((opt, oIdx) => {
+                                                    const isSelected = studentAnswer?.selectedAnswer === oIdx.toString();
+                                                    const isCorrectOpt = q.correctAnswer === oIdx.toString();
+
+                                                    let variantClass = "bg-white/5 text-gray-500 border-white/0";
+                                                    if (isSelected && studentAnswer?.isCorrect) variantClass = "bg-green-500/10 text-green-500 border-green-500/30 border";
+                                                    if (isSelected && !studentAnswer?.isCorrect) variantClass = "bg-red-500/10 text-red-500 border-red-500/30 border";
+                                                    if (!isSelected && isCorrectOpt) variantClass = "bg-green-500/5 text-green-500/60 border-green-500/10 border dashed";
+
+                                                    return (
+                                                        <div key={oIdx} className={`p-4 rounded-2xl text-sm font-bold flex items-center gap-3 ${variantClass}`}>
+                                                            <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center text-[10px] shrink-0">
+                                                                {String.fromCharCode(65 + oIdx)}
+                                                            </div>
+                                                            {opt}
+                                                            {isSelected && (studentAnswer?.isCorrect ? ' ✓' : ' ✗')}
+                                                            {!isSelected && isCorrectOpt && ' (الإجابة الصحيحة)'}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </motion.div>
                     </div>

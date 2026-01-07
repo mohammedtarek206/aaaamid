@@ -31,7 +31,7 @@ export default function Home() {
   const stats = [
     { label: 'طالب وطالبة', value: '15,000+', icon: <Users size={24} /> },
     { label: 'ساعة فيديو', value: '800+', icon: <PlayCircle size={24} /> },
-    { label: 'سنة خبرة', value: '20+', icon: <Trophy size={24} /> },
+    { label: 'سنة خبرة', value: '16+', icon: <Trophy size={24} /> },
     { label: 'تقييم عام', value: '4.9/5', icon: <Star size={24} /> },
   ];
 
@@ -107,10 +107,13 @@ export default function Home() {
             </div>
 
             {/* Social Icons Hero */}
-            <div className="mt-16 flex justify-center lg:justify-start gap-8 grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-700">
-              <Youtube className="cursor-pointer hover:text-red-600 transition-colors" size={28} />
-              <Facebook className="cursor-pointer hover:text-blue-600 transition-colors" size={28} />
-              <Instagram className="cursor-pointer hover:text-pink-600 transition-colors" size={28} />
+            <div className="mt-16 flex justify-center lg:justify-start gap-8 opacity-40 hover:opacity-100 transition-all duration-700">
+              <a href="https://youtube.com" target="_blank" className="hover:text-red-600 transition-colors"><Youtube size={28} /></a>
+              <a href="https://www.facebook.com/share/1ajY85wpZL/" target="_blank" className="hover:text-blue-600 transition-colors"><Facebook size={28} /></a>
+              <a href="https://www.tiktok.com/@mr.ahmed.shendy.o?_r=1&_t=ZS-92sXIWCeZKk" target="_blank" className="hover:text-white transition-colors">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" /></svg>
+              </a>
+              <a href="https://wa.me/201228056212" target="_blank" className="hover:text-green-500 transition-colors"><MessageCircle size={28} /></a>
             </div>
           </motion.div>
 
@@ -141,7 +144,7 @@ export default function Home() {
                     <Trophy size={32} />
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-black italic">20+</div>
+                    <div className="text-2xl font-black italic">16+</div>
                     <div className="text-[10px] text-gray-500 font-black uppercase tracking-[2px]">عام من الخبرة</div>
                   </div>
                 </div>
@@ -158,7 +161,7 @@ export default function Home() {
             <h2 className="text-4xl md:text-6xl font-black mb-8">عن <span className="gold-text">الأستاذ العميد</span></h2>
             <div className="w-24 h-2 gold-gradient rounded-full mb-10"></div>
             <div className="space-y-6 text-gray-400 text-lg font-medium leading-relaxed">
-              <p>يعتبر الأستاذ "العميد" علماً من أعلام تدريس مادة الرياضيات للمرحلة الثانوية، حيث نجح على مدار أكثر من 20 عاماً في تخريج آلاف الطلاب الذين التحقوا بكليات القمة.</p>
+              <p>يعتبر الأستاذ "العميد" علماً من أعلام تدريس مادة الرياضيات للمرحلة الثانوية، حيث نجح على مدار أكثر من 16 عاماً في تخريج آلاف الطلاب الذين التحقوا بكليات القمة.</p>
               <p>تميز منهجه بالجمع بين الفهم العميق للقواعد الرياضية والقدرة على حل أعقد المسائل في وقت قياسي باستخدام استراتيجيات "التفكير المنطقي السريع".</p>
               <div className="grid grid-cols-2 gap-8 pt-10">
                 <div className="p-6 glass-panel border-white/5 hover:border-gold/30 transition-all">
@@ -312,9 +315,9 @@ export default function Home() {
             <div className="w-32 h-2 gold-gradient rounded-full"></div>
             <p className="mt-8 text-gray-500 font-bold max-w-xl text-lg">استمتع بنخبة من أقوى المحاضرات المجانية لشرح أهم أجزاء المنهج بأسلوب متميز.</p>
           </div>
-          <Link href="https://youtube.com" target="_blank" className="px-10 py-5 rounded-2xl bg-red-600/10 text-red-500 border border-red-500/20 font-black flex items-center gap-4 hover:bg-red-600 hover:text-white transition-all">
+          <a href="https://youtube.com" target="_blank" className="px-10 py-5 rounded-2xl bg-red-600/10 text-red-500 border border-red-500/20 font-black flex items-center gap-4 hover:bg-red-600 hover:text-white transition-all">
             قناتنا على يوتيوب <Youtube size={24} />
-          </Link>
+          </a>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-12">
@@ -393,17 +396,23 @@ export default function Home() {
           </div>
 
           <div className="mb-24 flex justify-center gap-10">
-            <div className="w-16 h-16 glass-panel flex items-center justify-center hover:bg-gold hover:text-black transition-all cursor-pointer rounded-2xl"><Facebook size={24} /></div>
-            <div className="w-16 h-16 glass-panel flex items-center justify-center hover:bg-gold hover:text-black transition-all cursor-pointer rounded-2xl"><Youtube size={24} /></div>
-            <div className="w-16 h-16 glass-panel flex items-center justify-center hover:bg-gold hover:text-black transition-all cursor-pointer rounded-2xl"><Instagram size={24} /></div>
+            <a href="https://www.facebook.com/share/1ajY85wpZL/" target="_blank" className="w-16 h-16 glass-panel flex items-center justify-center hover:bg-gold hover:text-black transition-all cursor-pointer rounded-2xl"><Facebook size={24} /></a>
+            <a href="https://youtube.com" target="_blank" className="w-16 h-16 glass-panel flex items-center justify-center hover:bg-gold hover:text-black transition-all cursor-pointer rounded-2xl"><Youtube size={24} /></a>
+            <a href="https://www.tiktok.com/@mr.ahmed.shendy.o?_r=1&_t=ZS-92sXIWCeZKk" target="_blank" className="w-16 h-16 glass-panel flex items-center justify-center hover:bg-gold hover:text-black transition-all cursor-pointer rounded-2xl">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" /></svg>
+            </a>
+            <a href="https://wa.me/201228056212" target="_blank" className="w-16 h-16 glass-panel flex items-center justify-center hover:bg-gold hover:text-black transition-all cursor-pointer rounded-2xl"><MessageCircle size={24} /></a>
           </div>
 
           <div className="pt-20 border-t border-white/5 flex flex-col items-center gap-10">
             <div className="flex items-center gap-14 text-center">
               <div className="space-y-2">
                 <div className="text-[10px] text-gray-600 font-black uppercase tracking-[5px]">Developer</div>
-                <div className="text-lg font-black text-gray-400 group cursor-pointer">
-                  م. <span className="group-hover:gold-text transition-colors">محمد طارق</span>
+                <div className="flex items-center gap-3">
+                  <div className="text-lg font-black text-gray-400">م. محمد طارق</div>
+                  <a href="https://wa.me/201284621015" target="_blank" className="w-8 h-8 rounded-lg bg-green-500/10 text-green-500 flex items-center justify-center hover:bg-green-500 hover:text-white transition-all">
+                    <MessageCircle size={16} />
+                  </a>
                 </div>
               </div>
               <div className="w-px h-12 bg-white/5"></div>

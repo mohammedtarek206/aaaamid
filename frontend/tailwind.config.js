@@ -15,6 +15,11 @@ module.exports = {
                     dark: '#a67c37',
                     glow: 'rgba(201, 160, 80, 0.3)',
                 },
+                gold: {
+                    DEFAULT: '#c9a050',
+                    light: '#ecd08a',
+                    dark: '#a67c37',
+                },
                 deep: '#020202',
                 surface: '#0a0a0a',
                 card: 'rgba(15, 15, 15, 0.7)',

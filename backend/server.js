@@ -13,7 +13,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Optimize Mongoose for Serverless
-mongoose.set('bufferCommands', false);
+mongoose.set('bufferCommands', true);
 
 app.use(cors({
     origin: true, // Allow all origins for easier deployment setup

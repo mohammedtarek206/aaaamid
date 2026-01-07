@@ -124,30 +124,30 @@ export default function ExamPage() {
         <div className="min-h-screen math-grid pb-24">
             {/* Exam Header */}
             <header className="fixed top-0 w-full z-[100] bg-black/60 backdrop-blur-xl border-b border-white/5">
-                <div className="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 gold-gradient rounded-2xl flex items-center justify-center text-black shadow-lg">
-                            <GraduationCap size={28} />
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-5 flex flex-col sm:row justify-between items-center gap-4 sm:gap-0 sm:flex-row">
+                    <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 gold-gradient rounded-2xl flex items-center justify-center text-black shadow-lg shrink-0">
+                            <GraduationCap size={24} className="sm:w-[28px]" />
                         </div>
-                        <div>
-                            <h1 className="text-xl font-black gold-text leading-none">{exam.title}</h1>
-                            <div className="text-[9px] text-gray-500 font-black uppercase tracking-[2px] mt-1 italic">Exam System Active</div>
+                        <div className="min-w-0">
+                            <h1 className="text-base sm:text-xl font-black gold-text leading-tight truncate">{exam.title}</h1>
+                            <div className="hidden xs:block text-[8px] sm:text-[9px] text-gray-500 font-black uppercase tracking-[2px] mt-0.5 italic">Exam System Active</div>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-8">
-                        <div className={`flex items-center gap-4 px-8 py-3 rounded-2xl luxury-card gold-border !border-white/5 ${timeLeft < 300 ? 'border-red-500/30 text-red-500 animate-pulse' : 'gold-text'}`}>
-                            <Clock size={22} className="shrink-0" />
-                            <span className="text-2xl font-black tabular-nums tracking-tighter">{formatTime(timeLeft)}</span>
+                    <div className="flex items-center gap-3 sm:gap-8 w-full sm:w-auto justify-between sm:justify-end">
+                        <div className={`flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-2 sm:py-3 rounded-2xl luxury-card gold-border !border-white/5 ${timeLeft < 300 ? 'border-red-500/30 text-red-500 animate-pulse' : 'gold-text'}`}>
+                            <Clock size={18} className="shrink-0 sm:w-[22px]" />
+                            <span className="text-lg sm:text-2xl font-black tabular-nums tracking-tighter">{formatTime(timeLeft)}</span>
                         </div>
-                        <button onClick={() => submitExam()} disabled={isSubmitting} className="btn-primary !py-3 !px-10 !text-sm !rounded-xl">
+                        <button onClick={() => submitExam()} disabled={isSubmitting} className="btn-primary !py-2 sm:!py-3 !px-6 sm:!px-10 !text-xs sm:!text-sm !rounded-xl shrink-0">
                             تسليم الآن
                         </button>
                     </div>
                 </div>
             </header>
 
-            <main className="max-w-4xl mx-auto px-6 pt-40 space-y-12">
+            <main className="max-w-4xl mx-auto px-6 pt-48 sm:pt-40 space-y-12">
                 {questions.map((q, idx) => (
                     <motion.div
                         key={q._id}

@@ -72,7 +72,7 @@ export default function WatchVideo() {
             >
               <div className="absolute inset-0 bg-black">
                 <iframe
-                  src={`https://www.dailymotion.com/embed/video/${extractDailymotionId(video.dailymotionId)}?api=postMessage&autoplay=1&mute=0`}
+                  src={`https://www.dailymotion.com/embed/video/${extractDailymotionId(video.dailymotionId)}?api=postMessage&autoplay=1&mute=0&queue-enable=0&queue-autoplay-next=0&ui-logo=0&ui-start-screen-info=0`}
                   allow="autoplay; fullscreen; picture-in-picture"
                   allowFullScreen
                   frameBorder="0"

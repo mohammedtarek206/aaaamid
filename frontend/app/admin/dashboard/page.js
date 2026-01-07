@@ -436,7 +436,7 @@ export default function AdminDashboard() {
                                             </div>
                                             <div className="space-y-2">
                                                 <label className="text-xs font-black text-gray-500 uppercase tracking-widest pr-2">المرحلة الدراسية</label>
-                                                <select value={newData.grade || 1} onChange={e => setNewData({ ...newData, grade: parseInt(e.target.value) })} className="w-full bg-white/5 border border-white/5 p-4 rounded-xl focus:outline-none focus:border-gold/30 transition-all font-bold appearance-none" required>
+                                                <select value={newData.grade || 1} onChange={e => setNewData({ ...newData, grade: parseInt(e.target.value) })} className="w-full bg-white/5 border border-white/5 p-4 rounded-xl focus:outline-none focus:border-gold/30 transition-all font-bold appearance-none text-white [&>option]:bg-[#020202] [&>option]:text-white" required>
                                                     <option value="1">الأول الثانوي</option>
                                                     <option value="2">الثاني الثانوي</option>
                                                     <option value="3">الثالث الثانوي</option>

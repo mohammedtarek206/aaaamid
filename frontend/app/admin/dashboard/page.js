@@ -50,7 +50,10 @@ export default function AdminDashboard() {
                 setResults(r.data);
                 setFreeVideos(fv.data);
             } catch (err) {
-                if (err.response?.status === 401) router.push('/admin/login');
+                if (err.response?.status === 401 || err.response?.status === 403) {
+                    localStorage.removeItem('token');
+                    router.push('/admin/login');
+                }
             } finally {
                 setLoading(false);
             }

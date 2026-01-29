@@ -20,7 +20,11 @@ export default function AdminLogin() {
 
         try {
             const response = await api.post('/auth/login/admin', { username, password });
-            localStorage.setItem('adminToken', response.data.token);
+
+            // Clear any old student/admin data to prevent conflicts
+            localStorage.clear();
+
+            localStorage.setItem('token', response.data.token);
             router.push('/admin/dashboard');
         } catch (err) {
             console.error('Login Error:', err);

@@ -35,6 +35,9 @@ const mongooseOptions = {
 // Mongoose settings
 mongoose.set('bufferCommands', true); // Re-enable buffering but we will handle it better
 
+const Admin = require('./models/Admin');
+const bcrypt = require('bcryptjs');
+
 const connectDB = async () => {
     try {
         console.log('⏳ Connecting to MongoDB...');
@@ -42,8 +45,7 @@ const connectDB = async () => {
         console.log('✅ Connected to MongoDB');
 
         // Initial Admin Setup
-        const Admin = require('./models/Admin');
-        const bcrypt = require('bcryptjs');
+        console.log('⏳ Checking Admin account...');
         let existingAdmin = await Admin.findOne({ username: 'admin' });
         const hashedPassword = await bcrypt.hash('admin123', 10);
 
@@ -53,12 +55,13 @@ const connectDB = async () => {
         } else {
             existingAdmin.password = hashedPassword;
             await existingAdmin.save();
-            console.log('🔄 Admin account updated to password: admin123');
+            console.log('🔄 Admin account password RESET to: admin123');
         }
 
         // Start Server ONLY after successful DB connection
         app.listen(PORT, () => {
-            console.log(`🚀 Server is running on port ${PORT}`);
+            console.log(`🚀 Server is running on http://localhost:${PORT}`);
+            console.log(`📡 API Base URL: http://localhost:${PORT}/api`);
         });
 
     } catch (err) {

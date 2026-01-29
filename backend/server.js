@@ -12,9 +12,6 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
-// Optimize Mongoose for Serverless
-mongoose.set('bufferCommands', true);
-
 app.use(cors({
     origin: true, // Allow all origins for easier deployment setup
     credentials: true,
@@ -26,19 +23,30 @@ const PORT = process.env.PORT || 5000;
 
 // Connect to MongoDB with optimized production settings
 const mongooseOptions = {
+    // These options are now default in Mongoose 6+, but kept for clarity/compatibility
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 5000,
-    socketTimeoutMS: 45000,
+    // Robust settings for VPS/Serverless
+    serverSelectionTimeoutMS: 10000, // Wait up to 10s for server selection
+    socketTimeoutMS: 45000,         // Close sockets after 45s of inactivity
+    family: 4                       // Skip trying IPv6
 };
 
-mongoose.connect(process.env.MONGODB_URI, mongooseOptions)
-    .then(async () => {
+// Disable buffering to avoid 'buffer timeout' errors. 
+// Instead of waiting, it will fail immediately if not connected, which is better for debugging.
+mongoose.set('bufferCommands', false);
+
+const connectDB = async () => {
+    try {
+        await mongoose.connect(process.env.MONGODB_URI, mongooseOptions);
         console.log('✅ Connected to MongoDB');
+
+        // Initial Admin Setup
         const Admin = require('./models/Admin');
         const bcrypt = require('bcryptjs');
         let existingAdmin = await Admin.findOne({ username: 'admin' });
         const hashedPassword = await bcrypt.hash('admin123', 10);
+
         if (!existingAdmin) {
             await new Admin({ username: 'admin', password: hashedPassword }).save();
             console.log('🚀 Admin account created: admin / admin123');
@@ -47,14 +55,28 @@ mongoose.connect(process.env.MONGODB_URI, mongooseOptions)
             await existingAdmin.save();
             console.log('🔄 Admin account updated to password: admin123');
         }
-    })
-    .catch(err => {
+    } catch (err) {
         console.error('❌ MongoDB Connection Error Details:', {
             message: err.message,
             code: err.code,
             name: err.name
         });
-    });
+        // On VPS, we might want to retry or exit
+        console.log('Retrying connection in 5 seconds...');
+        setTimeout(connectDB, 5000);
+    }
+};
+
+connectDB();
+
+// Monitor connection status
+mongoose.connection.on('disconnected', () => {
+    console.warn('⚠️ MongoDB disconnected! Attempting to reconnect...');
+});
+
+mongoose.connection.on('error', (err) => {
+    console.error('❌ MongoDB runtime error:', err);
+});
 
 // Routes
 const authRoutes = require('./routes/authRoutes');

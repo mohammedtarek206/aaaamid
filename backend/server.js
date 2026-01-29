@@ -32,12 +32,12 @@ const mongooseOptions = {
     family: 4                       // Skip trying IPv6
 };
 
-// Disable buffering to avoid 'buffer timeout' errors. 
-// Instead of waiting, it will fail immediately if not connected, which is better for debugging.
-mongoose.set('bufferCommands', false);
+// Mongoose settings
+mongoose.set('bufferCommands', true); // Re-enable buffering but we will handle it better
 
 const connectDB = async () => {
     try {
+        console.log('⏳ Connecting to MongoDB...');
         await mongoose.connect(process.env.MONGODB_URI, mongooseOptions);
         console.log('✅ Connected to MongoDB');
 
@@ -55,14 +55,15 @@ const connectDB = async () => {
             await existingAdmin.save();
             console.log('🔄 Admin account updated to password: admin123');
         }
-    } catch (err) {
-        console.error('❌ MongoDB Connection Error Details:', {
-            message: err.message,
-            code: err.code,
-            name: err.name
+
+        // Start Server ONLY after successful DB connection
+        app.listen(PORT, () => {
+            console.log(`🚀 Server is running on port ${PORT}`);
         });
-        // On VPS, we might want to retry or exit
-        console.log('Retrying connection in 5 seconds...');
+
+    } catch (err) {
+        console.error('❌ MongoDB Connection Error:', err.message);
+        console.log('🔄 Retrying connection in 5 seconds...');
         setTimeout(connectDB, 5000);
     }
 };
@@ -71,7 +72,7 @@ connectDB();
 
 // Monitor connection status
 mongoose.connection.on('disconnected', () => {
-    console.warn('⚠️ MongoDB disconnected! Attempting to reconnect...');
+    console.warn('⚠️ MongoDB disconnected!');
 });
 
 mongoose.connection.on('error', (err) => {
@@ -91,10 +92,6 @@ app.use('/api/public', publicRoutes);
 
 app.get('/', (req, res) => {
     res.send('El-Amid Platform API is running...');
-});
-
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
 });
 
 module.exports = app;

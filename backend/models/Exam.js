@@ -9,4 +9,6 @@ const examSchema = new mongoose.Schema({
     showResultImmediately: { type: Boolean, default: true }
 }, { timestamps: true });
 
+examSchema.index({ grade: 1, isActive: 1 });
+
 module.exports = mongoose.model('Exam', examSchema);

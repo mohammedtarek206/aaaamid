@@ -9,4 +9,6 @@ const videoSchema = new mongoose.Schema({
     views: { type: Number, default: 0 }
 }, { timestamps: true });
 
+videoSchema.index({ grade: 1 });
+
 module.exports = mongoose.model('Video', videoSchema);

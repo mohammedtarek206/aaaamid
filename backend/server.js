@@ -53,9 +53,9 @@ const connectDB = async () => {
             await new Admin({ username: 'admin', password: hashedPassword }).save();
             console.log('🚀 Admin account created: admin / admin123');
         } else {
-            existingAdmin.password = hashedPassword;
-            await existingAdmin.save();
-            console.log('🔄 Admin account password RESET to: admin123');
+            // Force reset password - uncomment ONLY if you lose access
+            // existingAdmin.password = hashedPassword; await existingAdmin.save(); console.log('🔄 Admin account password RESET to: admin123');
+            console.log('✅ Admin account is ready');
         }
 
         // Start Server ONLY after successful DB connection
@@ -93,8 +93,40 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/student', studentRoutes);
 app.use('/api/public', publicRoutes);
 
+// Health Check Endpoint for Monitoring
+app.get('/api/health', (req, res) => {
+    res.json({
+        status: 'UP',
+        timestamp: new Date(),
+        database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'
+    });
+});
+
 app.get('/', (req, res) => {
-    res.send('El-Amid Platform API is running...');
+    res.send('El-Amid Platform API is running smoothly...');
+});
+
+// Global Error Handler Middleware
+app.use((err, req, res, next) => {
+    console.error('🔥 GLOBAL ERROR:', err.stack);
+    res.status(err.status || 500).json({
+        error: process.env.NODE_ENV === 'production'
+            ? 'Internal Server Error'
+            : err.message
+    });
+});
+
+// Handle Uncaught Exceptions to prevent server from dying silently
+process.on('uncaughtException', (err) => {
+    console.error('💥 UNCAUGHT EXCEPTION! Shutting down...');
+    console.error(err.name, err.message);
+    process.exit(1);
+});
+
+process.on('unhandledRejection', (err) => {
+    console.error('💥 UNHANDLED REJECTION! Shutting down...');
+    console.error(err.name, err.message);
+    process.exit(1);
 });
 
 module.exports = app;

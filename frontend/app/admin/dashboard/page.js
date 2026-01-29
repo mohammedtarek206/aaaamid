@@ -126,7 +126,9 @@ export default function AdminDashboard() {
             const res = await api.patch(`/admin/students/${id}/toggle-status`);
             setStudents(students.map(s => s._id === id ? res.data : s));
         } catch (err) {
-            alert('حدث خطأ أثناء تحديث الحالة');
+            console.error('Toggle Status Error:', err.response?.data || err);
+            const errorMsg = err.response?.data?.error || 'حدث خطأ أثناء تحديث الحالة - تأكد من صلاحيات الأدمن';
+            alert(errorMsg);
         } finally {
             setStatusLoading(prev => ({ ...prev, [id]: false }));
         }

@@ -118,12 +118,17 @@ export default function AdminDashboard() {
         }
     };
 
+    const [statusLoading, setStatusLoading] = useState({});
+
     const toggleStatus = async (id) => {
+        setStatusLoading(prev => ({ ...prev, [id]: true }));
         try {
             const res = await api.patch(`/admin/students/${id}/toggle-status`);
             setStudents(students.map(s => s._id === id ? res.data : s));
         } catch (err) {
             alert('حدث خطأ أثناء تحديث الحالة');
+        } finally {
+            setStatusLoading(prev => ({ ...prev, [id]: false }));
         }
     };
 
@@ -378,9 +383,17 @@ export default function AdminDashboard() {
                                                         {activeTab === 'students' ? (
                                                             <button
                                                                 onClick={() => toggleStatus(item._id)}
-                                                                className="flex items-center gap-2 hover:opacity-80 transition-all"
+                                                                disabled={statusLoading[item._id]}
+                                                                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all border ${item.isActive !== false
+                                                                    ? 'bg-green-500/10 border-green-500/20 text-green-500 hover:bg-green-500/20'
+                                                                    : 'bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500/20'
+                                                                    } ${statusLoading[item._id] ? 'opacity-50 cursor-wait' : ''}`}
                                                             >
-                                                                <div className={`w-2 h-2 rounded-full shadow-[0_0_10px_rgba(34,197,94,0.4)] ${item.isActive !== false ? 'bg-green-500' : 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.4)]'}`}></div>
+                                                                {statusLoading[item._id] ? (
+                                                                    <RefreshCw size={14} className="animate-spin" />
+                                                                ) : (
+                                                                    <div className={`w-2 h-2 rounded-full ${item.isActive !== false ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]' : 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.4)]'}`}></div>
+                                                                )}
                                                                 <span className="text-xs font-bold">{item.isActive !== false ? 'نشط' : 'معطل'}</span>
                                                             </button>
                                                         ) : (

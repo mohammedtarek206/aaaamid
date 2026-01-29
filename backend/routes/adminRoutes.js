@@ -50,7 +50,10 @@ router.delete('/students/:id', async (req, res) => {
 router.patch('/students/:id/toggle-status', async (req, res) => {
     try {
         const student = await Student.findById(req.params.id);
-        student.isActive = !student.isActive;
+        if (!student) {
+            return res.status(404).json({ error: 'Student not found' });
+        }
+        student.isActive = (student.isActive === false) ? true : false;
         await student.save();
         res.json(student);
     } catch (err) {

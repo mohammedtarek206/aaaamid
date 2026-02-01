@@ -6,7 +6,8 @@ const questionSchema = new mongoose.Schema({
     type: { type: String, enum: ['MCQ', 'True/False'], default: 'MCQ' },
     options: [{ type: String }], // Array of strings for MCQ
     correctAnswer: { type: String, required: true }, // For MCQ, this will store the OPTION INDEX (0,1,2,3) for stability
-    points: { type: Number, default: 1 }
+    points: { type: Number, default: 1 },
+    imageUrl: { type: String, default: null }
 });
 
 module.exports = mongoose.model('Question', questionSchema);

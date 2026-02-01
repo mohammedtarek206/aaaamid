@@ -4,6 +4,7 @@ const Student = require('../models/Student');
 const Video = require('../models/Video');
 const Exam = require('../models/Exam');
 const Question = require('../models/Question');
+const Activity = require('../models/Activity');
 const crypto = require('crypto');
 
 const router = express.Router();
@@ -11,14 +12,24 @@ const router = express.Router();
 router.use(auth, isAdmin);
 
 // Student Management
-router.post('/students', async (req, res) => {
+router.post('/students/generate', async (req, res) => {
     try {
-        const { name, grade } = req.body;
-        // Generate a random 6-character code if not provided
-        const code = crypto.randomBytes(3).toString('hex').toUpperCase();
-        const student = new Student({ name, grade, code });
-        await student.save();
-        res.status(201).json(student);
+        const { count, grade, track } = req.body;
+        const students = [];
+
+        for (let i = 0; i < count; i++) {
+            // Generate a random 8-character unique code
+            const code = crypto.randomBytes(4).toString('hex').toUpperCase();
+            students.push({
+                code,
+                grade: parseInt(grade),
+                track: track || 'عام',
+                isActivated: false
+            });
+        }
+
+        const createdStudents = await Student.insertMany(students);
+        res.status(201).json(createdStudents);
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
@@ -42,6 +53,43 @@ router.delete('/students/:id', async (req, res) => {
     try {
         await Student.findByIdAndDelete(req.params.id);
         res.status(204).send();
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+router.get('/students/:id/activity', async (req, res) => {
+    try {
+        const student = await Student.findById(req.params.id)
+            .populate('accessibleVideos', 'title unit lesson')
+            .populate('accessibleExams', 'title duration');
+
+        if (!student) {
+            return res.status(404).json({ error: 'Student not found' });
+        }
+
+        const activities = await Activity.find({ studentId: req.params.id })
+            .sort({ timestamp: -1 })
+            .limit(100);
+
+        res.json({
+            student,
+            activities
+        });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+router.patch('/students/:id/permissions', async (req, res) => {
+    try {
+        const { accessibleVideos, accessibleExams } = req.body;
+        const student = await Student.findByIdAndUpdate(
+            req.params.id,
+            { accessibleVideos, accessibleExams },
+            { new: true }
+        );
+        res.json(student);
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
@@ -145,6 +193,26 @@ router.delete('/exams/:id', async (req, res) => {
         // Also delete associated questions
         await Question.deleteMany({ examId: req.params.id });
         res.status(204).send();
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// Bulk Questions Creation
+router.post('/exams/:examId/questions/bulk', async (req, res) => {
+    try {
+        const { questions } = req.body; // Array of objects { text: "...", options: [...], correctAnswer: "..." }
+        const { examId } = req.params;
+
+        const docs = questions.map(q => ({
+            ...q,
+            examId,
+            type: 'MCQ',
+            points: q.points || 1
+        }));
+
+        const savedQuestions = await Question.insertMany(docs);
+        res.status(201).json(savedQuestions);
     } catch (err) {
         res.status(400).json({ error: err.message });
     }

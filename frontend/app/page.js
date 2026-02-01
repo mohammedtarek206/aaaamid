@@ -16,6 +16,12 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('courses');
   const [playingId, setPlayingId] = useState(null);
 
+  const extractDailymotionId = (input) => {
+    if (!input) return '';
+    const match = input.match(/(?:dailymotion\.com(?:\/video|\/embed\/video)\/|dai\.ly\/)([a-zA-Z0-9]+)/);
+    return match ? match[1] : input.trim();
+  };
+
   useEffect(() => {
     const fetchFreeVideos = async () => {
       try {
@@ -336,23 +342,40 @@ export default function Home() {
               >
                 <div className="aspect-video relative overflow-hidden bg-black/40">
                   {playingId === v._id ? (
-                    <iframe
-                      className="absolute inset-0 w-full h-full"
-                      src={`https://www.youtube.com/embed/${v.youtubeId}?autoplay=1`}
-                      title={v.title}
-                      frameBorder="0"
-                      allow="autoplay; fullscreen"
-                      allowFullScreen
-                    ></iframe>
+                    v.sourceType === 'dailymotion' ? (
+                      <iframe
+                        className="absolute inset-0 w-full h-full"
+                        src={`https://www.dailymotion.com/embed/video/${extractDailymotionId(v.youtubeId || v.dailymotionId)}?autoplay=1`}
+                        title={v.title}
+                        frameBorder="0"
+                        allow="autoplay; fullscreen"
+                        allowFullScreen
+                      ></iframe>
+                    ) : (
+                      <iframe
+                        className="absolute inset-0 w-full h-full"
+                        src={`https://www.youtube.com/embed/${v.youtubeId}?autoplay=1`}
+                        title={v.title}
+                        frameBorder="0"
+                        allow="autoplay; fullscreen"
+                        allowFullScreen
+                      ></iframe>
+                    )
                   ) : (
                     <div className="absolute inset-0 bg-black transition-opacity duration-700 z-10 flex items-center justify-center">
-                      <img
-                        src={`https://img.youtube.com/vi/${v.youtubeId}/maxresdefault.jpg`}
-                        alt={v.title}
-                        className="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-1000"
-                      />
-                      <div className="absolute w-20 h-20 bg-red-600 rounded-full flex items-center justify-center text-white shadow-2xl group-hover:scale-125 transition-all">
-                        <Play size={32} fill="white" />
+                      {v.sourceType === 'dailymotion' ? (
+                        <div className="absolute inset-0 flex items-center justify-center bg-gold/5">
+                          <Play size={48} className="text-gold/20" />
+                        </div>
+                      ) : (
+                        <img
+                          src={`https://img.youtube.com/vi/${v.youtubeId}/maxresdefault.jpg`}
+                          alt={v.title}
+                          className="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-1000"
+                        />
+                      )}
+                      <div className={`absolute w-20 h-20 ${v.sourceType === 'dailymotion' ? 'bg-gold' : 'bg-red-600'} rounded-full flex items-center justify-center text-white shadow-2xl group-hover:scale-125 transition-all`}>
+                        <Play size={32} fill={v.sourceType === 'dailymotion' ? 'black' : 'white'} className={v.sourceType === 'dailymotion' ? 'text-black' : 'text-white'} />
                       </div>
                     </div>
                   )}

@@ -20,9 +20,20 @@ export default function WatchVideo() {
   useEffect(() => {
     const fetchVideo = async () => {
       try {
-        const response = await api.get('/student/videos');
-        const v = response.data.find(item => item._id === id);
+        const vRes = await api.get('/student/videos');
+        const v = vRes.data.find(item => item._id === id);
         setVideo(v);
+
+        // Log video view
+        if (v) {
+          try {
+            await api.post('/student/activity/log', {
+              action: 'view_video',
+              targetId: id,
+              details: `مشاهدة فيديو: ${v.title}`
+            });
+          } catch (e) { console.warn('Activity log failed'); }
+        }
       } catch (err) {
         console.error(err);
       }

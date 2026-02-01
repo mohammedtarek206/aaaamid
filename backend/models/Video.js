@@ -6,9 +6,10 @@ const videoSchema = new mongoose.Schema({
     unit: { type: String, required: true },
     lesson: { type: String, required: true },
     dailymotionId: { type: String, required: true },
+    track: { type: String, enum: ['عام', 'علمي', 'أدبي'], default: 'عام' },
     views: { type: Number, default: 0 }
 }, { timestamps: true });
 
-videoSchema.index({ grade: 1 });
+videoSchema.index({ grade: 1, track: 1 });
 
 module.exports = mongoose.model('Video', videoSchema);

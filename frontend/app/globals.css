@@ -106,3 +106,259 @@
 .reveal {
     animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* Hide print area in normal UI */
+#print-area {
+    display: none;
+}
+
+@media print {
+
+    /* Basic Reset */
+    body {
+        background: white !important;
+        color: black !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Hide UI Elements */
+    .no-print,
+    nav,
+    aside,
+    header,
+    button,
+    footer {
+        display: none !important;
+    }
+
+    /* Show Print Area */
+    #print-area {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        position: static !important;
+        width: 100% !important;
+        padding: 20px !important;
+        background: white !important;
+    }
+
+    #print-area * {
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+    .print-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 15px !important;
+        width: 100% !important;
+        direction: rtl !important;
+    }
+
+    /* Premium Card Container */
+    .print-card {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        position: relative;
+        height: 340px;
+        /* Standard ID Height */
+        background: #080808 !important;
+        /* Rich Black */
+        border-radius: 16px;
+        overflow: hidden;
+        display: flex !important;
+        flex-direction: row !important;
+        /* Sidebar Layout */
+        border: 1px solid #222;
+        color: white !important;
+        box-shadow: none !important;
+        margin-bottom: 20px;
+        print-color-adjust: exact !important;
+        -webkit-print-color-adjust: exact !important;
+    }
+
+    /* Sidebar (Left Side in RTL) */
+    .print-card-sidebar {
+        width: 85px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 10px;
+        position: relative;
+        z-index: 10;
+        border-left: 2px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .print-card-sidebar-text {
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        transform: rotate(180deg);
+        font-weight: 900;
+        font-size: 18px;
+        letter-spacing: 2px;
+        white-space: nowrap;
+        text-transform: uppercase;
+        margin-top: 20px;
+    }
+
+    /* Main Content Body */
+    .print-card-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 20px 15px;
+        position: relative;
+        background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.05), transparent 70%);
+    }
+
+    /* Grade Themes - Metallic Accents */
+    /* 3rd Secondary - Radiant Gold */
+    .theme-gold {
+        border-color: #d4af37 !important;
+    }
+
+    .theme-gold .print-card-sidebar {
+        background: linear-gradient(180deg, #bf953f, #fcf6ba, #d4af37, #aa771c) !important;
+        color: black !important;
+    }
+
+    .theme-gold .accent-text {
+        color: #d4af37 !important;
+    }
+
+    .theme-gold .print-code {
+        border: 2px solid #d4af37 !important;
+        color: #d4af37 !important;
+        background: rgba(212, 175, 55, 0.1) !important;
+    }
+
+    /* 2nd Secondary - Platinum/Silver Gold */
+    .theme-silver {
+        border-color: #a0b2c6 !important;
+    }
+
+    .theme-silver .print-card-sidebar {
+        background: linear-gradient(180deg, #8a8a8a, #e6e6e6, #a0b2c6, #757575) !important;
+        color: black !important;
+    }
+
+    .theme-silver .accent-text {
+        color: #a0b2c6 !important;
+    }
+
+    .theme-silver .print-code {
+        border: 2px solid #a0b2c6 !important;
+        color: #a0b2c6 !important;
+        background: rgba(160, 178, 198, 0.1) !important;
+    }
+
+    /* 1st Secondary - Bronze/Copper */
+    .theme-bronze {
+        border-color: #cd7f32 !important;
+    }
+
+    .theme-bronze .print-card-sidebar {
+        background: linear-gradient(180deg, #b87333, #ffcba4, #cd7f32, #8d4004) !important;
+        color: black !important;
+    }
+
+    .theme-bronze .accent-text {
+        color: #cd7f32 !important;
+    }
+
+    .theme-bronze .print-code {
+        border: 2px solid #cd7f32 !important;
+        color: #cd7f32 !important;
+        background: rgba(205, 127, 50, 0.1) !important;
+    }
+
+
+    /* Typography & Elements */
+    .print-header {
+        text-align: right;
+        margin-bottom: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding-bottom: 10px;
+    }
+
+    .print-title {
+        font-size: 14px;
+        font-weight: 900;
+        color: white !important;
+    }
+
+    .print-student-name {
+        font-size: 18px;
+        font-weight: 900;
+        color: white !important;
+        margin-bottom: 5px;
+        line-height: 1.3;
+    }
+
+    .print-details {
+        font-size: 10px;
+        font-weight: 700;
+        color: #aaa !important;
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+
+    .print-tag {
+        background: rgba(255, 255, 255, 0.1) !important;
+        padding: 4px 10px;
+        border-radius: 4px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .print-code {
+        font-size: 32px;
+        font-weight: 900;
+        letter-spacing: 3px;
+        text-align: center;
+        padding: 10px;
+        border-radius: 12px;
+        margin-top: auto;
+        margin-bottom: 30px;
+        position: relative;
+    }
+
+    /* Support Footer */
+    .print-footer {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        padding: 8px;
+        text-align: center;
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        font-size: 9px;
+        font-weight: 700;
+        color: #888 !important;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 5px;
+    }
+
+    /* Photo Placeholder */
+    .print-photo-box {
+        position: absolute;
+        left: 15px;
+        top: 15px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: #111 !important;
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+}

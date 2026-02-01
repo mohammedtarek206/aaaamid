@@ -1,5 +1,6 @@
 import './globals.css';
 import Footer from '@/components/Footer';
+import ActivityTracker from '@/components/ActivityTracker';
 
 export const metadata = {
     title: 'العميد - منصة الرياضيات التعليمية',
@@ -22,6 +23,7 @@ export default function RootLayout({ children }) {
                 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;400;700;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
             </head>
             <body>
+                <ActivityTracker />
                 {children}
                 <Footer />
             </body>

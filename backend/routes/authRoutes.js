@@ -10,11 +10,27 @@ const router = express.Router();
 // Student Login by Code
 router.post('/login/student', async (req, res) => {
     try {
-        const { code } = req.body;
+        const { code, name, phone, parentPhone } = req.body;
         const student = await Student.findOne({ code, isActive: true });
 
         if (!student) {
-            return res.status(404).json({ error: 'Invalid code or inactive account' });
+            return res.status(404).json({ error: 'الكود غير صحيح أو الحساب معطل' });
+        }
+
+        // Handle Activation Flow
+        if (!student.isActivated) {
+            if (name && phone && parentPhone) {
+                student.name = name;
+                student.phone = phone;
+                student.parentPhone = parentPhone;
+                student.isActivated = true;
+                // We'll save later after session update
+            } else {
+                return res.status(403).json({
+                    error: 'يرجى إكمال البيانات أولاً',
+                    needsRegistration: true
+                });
+            }
         }
 
         // Generate a unique session ID

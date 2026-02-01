@@ -8,29 +8,49 @@ import { LogIn, ShieldAlert, GraduationCap, XCircle } from 'lucide-react';
 
 export default function Login() {
   const [code, setCode] = useState('');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [parentPhone, setParentPhone] = useState('');
+  const [showRegModal, setShowRegModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
 
   const handleLogin = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     setIsLoading(true);
     setError('');
 
     try {
-      const response = await api.post('/auth/login/student', { code });
+      const response = await api.post('/auth/login/student', {
+        code,
+        name: name || undefined,
+        phone: phone || undefined,
+        parentPhone: parentPhone || undefined
+      });
+
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('student', JSON.stringify(response.data.student));
+
+      // Log simple login activity
+      try {
+        await api.post('/student/activity/log', { action: 'login' });
+      } catch (err) { console.warn('Activity logging failed'); }
+
       router.push(`/dashboard/grade/${response.data.student.grade}`);
     } catch (err) {
-      setError(err.response?.data?.error || 'كود الطالب غير صحيح أو حدث خطأ ما');
+      if (err.response?.data?.needsRegistration) {
+        setShowRegModal(true);
+      } else {
+        setError(err.response?.data?.error || 'كود الطالب غير صحيح أو حدث خطأ ما');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen math-grid flex items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen math-grid flex items-center justify-center p-6 relative overflow-hidden font-cairo">
       <div className="glow-mesh top-0 right-0 animate-pulse-glow"></div>
       <div className="glow-mesh bottom-0 left-0 animate-pulse-glow" style={{ animationDelay: '3s' }}></div>
 
@@ -46,7 +66,7 @@ export default function Login() {
               <GraduationCap size={40} className="text-black" />
             </div>
 
-            <h1 className="text-3xl font-black mb-3">تسجيل الدخول <br /><span className="gold-text">للطلاب</span></h1>
+            <h1 className="text-3xl font-black mb-3 text-white">تسجيل الدخول <br /><span className="gold-text">للطلاب</span></h1>
             <p className="text-gray-500 font-bold mb-12 text-sm">منصة العميد لتعليم الرياضيات</p>
 
             <form onSubmit={handleLogin} className="space-y-8 text-right">
@@ -57,7 +77,7 @@ export default function Login() {
                   placeholder="أدخل الكود الخاص بك"
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
-                  className="w-full bg-white/5 border-0 border-b-2 border-white/10 p-6 text-center text-3xl font-black focus:outline-none focus:border-gold transition-all placeholder:text-gray-800 placeholder:text-sm placeholder:tracking-normal rounded-t-2xl tracking-[4px]"
+                  className="w-full bg-white/5 border-0 border-b-2 border-white/10 p-6 text-center text-3xl font-black focus:outline-none focus:border-gold transition-all text-white placeholder:text-gray-800 placeholder:text-sm placeholder:tracking-normal rounded-t-2xl tracking-[4px]"
                   required
                 />
               </div>
@@ -93,6 +113,41 @@ export default function Login() {
             </div>
           </div>
         </div>
+
+        {/* Registration Modal */}
+        {showRegModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="w-full max-w-[500px] luxury-card gold-gradient p-1"
+            >
+              <div className="bg-[#020202] rounded-[30px] p-10 md:p-14 text-center">
+                <h2 className="text-2xl font-black mb-2 text-white">إكمال بيانات الطالب</h2>
+                <p className="text-gray-500 font-bold mb-10 text-sm">يرجى إدخال بياناتك للدخول لأول مرة</p>
+
+                <form onSubmit={handleLogin} className="space-y-6 text-right">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black gold-text uppercase pr-2">الاسم رباعي</label>
+                    <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="مثال: أحمد محمد علي حسن" className="w-full bg-white/5 border border-white/10 p-4 rounded-xl focus:border-gold outline-none text-white font-bold" required />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black gold-text uppercase pr-2">رقم الهاتف</label>
+                    <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="01xxxxxxxxx" className="w-full bg-white/5 border border-white/10 p-4 rounded-xl focus:border-gold outline-none text-white font-black" required />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black gold-text uppercase pr-2">رقم هاتف ولي الأمر</label>
+                    <input type="tel" value={parentPhone} onChange={e => setParentPhone(e.target.value)} placeholder="01xxxxxxxxx" className="w-full bg-white/5 border border-white/10 p-4 rounded-xl focus:border-gold outline-none text-white font-black" required />
+                  </div>
+
+                  <button type="submit" disabled={isLoading} className="btn-primary w-full py-5 text-lg mt-4 gold-gradient !text-black shadow-xl">
+                    {isLoading ? 'جاري الحفظ...' : 'تأكيد البيانات والدخول'}
+                  </button>
+                </form>
+              </div>
+            </motion.div>
+          </div>
+        )}
 
         <div className="mt-8 flex justify-center items-center gap-3 text-[10px] text-gray-700 font-black uppercase tracking-[3px]">
           <ShieldAlert size={14} />

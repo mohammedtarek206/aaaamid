@@ -4,6 +4,8 @@ const Video = require('../models/Video');
 const Exam = require('../models/Exam');
 const Question = require('../models/Question');
 const Result = require('../models/Result');
+const Activity = require('../models/Activity');
+const Student = require('../models/Student');
 
 const router = express.Router();
 
@@ -12,7 +14,13 @@ router.use(auth);
 // Get videos for student's grade
 router.get('/videos', async (req, res) => {
     try {
-        const videos = await Video.find({ grade: req.user.grade }).sort({ createdAt: -1 });
+        const student = await Student.findById(req.user.id);
+        // Admin now has strict control. Students only see what is in accessibleVideos.
+        if (!student || !student.accessibleVideos || student.accessibleVideos.length === 0) {
+            return res.json([]);
+        }
+
+        const videos = await Video.find({ _id: { $in: student.accessibleVideos } }).sort({ createdAt: -1 });
         res.json(videos);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -22,7 +30,13 @@ router.get('/videos', async (req, res) => {
 // Get exams for student's grade
 router.get('/exams', async (req, res) => {
     try {
-        const exams = await Exam.find({ grade: req.user.grade, isActive: true });
+        const student = await Student.findById(req.user.id);
+        // Admin now has strict control. Students only see what is in accessibleExams.
+        if (!student || !student.accessibleExams || student.accessibleExams.length === 0) {
+            return res.json([]);
+        }
+
+        const exams = await Exam.find({ _id: { $in: student.accessibleExams }, isActive: true }).sort({ createdAt: -1 });
         res.json(exams);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -77,6 +91,27 @@ router.post('/exams/:id/submit', async (req, res) => {
 
         await result.save();
         res.json(result);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Activity Logging
+router.post('/activity/log', async (req, res) => {
+    try {
+        const { action, targetId, details } = req.body;
+        const activity = new Activity({
+            studentId: req.user.id,
+            action,
+            targetId,
+            details
+        });
+        await activity.save();
+
+        // Update lastActive on student
+        await Student.findByIdAndUpdate(req.user.id, { lastActive: Date.now() });
+
+        res.status(201).json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

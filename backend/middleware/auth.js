@@ -23,6 +23,12 @@ const auth = async (req, res, next) => {
                 return res.status(401).json({ error: 'Logged in from another device' });
             }
 
+            // Device Fingerprint Check
+            const deviceId = req.headers['x-device-id'];
+            if (student.deviceId && deviceId && student.deviceId !== deviceId) {
+                return res.status(403).json({ error: 'Device mismatch. Access denied.' });
+            }
+
             req.user = student;
             req.role = 'student';
         }

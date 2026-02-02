@@ -17,6 +17,20 @@ router.post('/login/student', async (req, res) => {
             return res.status(404).json({ error: 'الكود غير صحيح أو الحساب معطل' });
         }
 
+        // Device Security Check
+        const deviceId = req.body.deviceId || req.headers['x-device-id'];
+
+        if (!student.deviceId && deviceId) {
+            // First time login from a specific device (bind account to this device)
+            student.deviceId = deviceId;
+        } else if (student.deviceId && student.deviceId !== deviceId) {
+            // Attempt to login from a different device
+            return res.status(403).json({
+                error: 'هذا الحساب مقيد بجهاز آخر. لا يمكن استخدام الحساب على أكثر من جهاز.',
+                code: 'DEVICE_MISMATCH'
+            });
+        }
+
         // Handle Activation Flow
         if (!student.isActivated) {
             if (name && phone && parentPhone) {

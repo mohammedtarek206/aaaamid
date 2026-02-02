@@ -9,6 +9,7 @@ const studentSchema = new mongoose.Schema({
     parentPhone: { type: String },
     isActivated: { type: Boolean, default: false },
     currentSessionId: { type: String, default: null }, // To handle single device login
+    deviceId: { type: String, default: null }, // Unique device identifier
     isSubscribed: { type: Boolean, default: false },
     subscriptionExpiry: { type: Date, default: null },
     lastLogin: { type: Date, default: null },

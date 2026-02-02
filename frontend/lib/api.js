@@ -5,12 +5,31 @@ const api = axios.create({
     withCredentials: true,
 });
 
-// Request interceptor for tokens
+// Helper to get or create a persistent Device ID
+const getDeviceId = () => {
+    if (typeof window === 'undefined') return null;
+
+    let deviceId = localStorage.getItem('device_id');
+    if (!deviceId) {
+        deviceId = crypto.randomUUID ? crypto.randomUUID() : `device-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        localStorage.setItem('device_id', deviceId);
+    }
+    return deviceId;
+};
+
+// Request interceptor for tokens & device ID
 api.interceptors.request.use((config) => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const deviceId = getDeviceId();
+
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
+
+    if (deviceId) {
+        config.headers['x-device-id'] = deviceId;
+    }
+
     return config;
 });
 

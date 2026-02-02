@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Users, Video, FileText, BarChart3, Plus, Search,
     LogOut, GraduationCap, Key, Edit2, Trash2, ExternalLink,
-    RefreshCw, PlayCircle, Layout, BookOpen, Trophy, Phone
+    RefreshCw, PlayCircle, Layout, BookOpen, Trophy, Phone, Smartphone
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -135,6 +135,20 @@ export default function AdminDashboard() {
             console.error('Toggle Status Error:', err.response?.data || err);
             const errorMsg = err.response?.data?.error || 'حدث خطأ أثناء تحديث الحالة - تأكد من صلاحيات الأدمن';
             alert(errorMsg);
+        } finally {
+            setStatusLoading(prev => ({ ...prev, [id]: false }));
+        }
+    };
+
+    const handleResetDevice = async (id) => {
+        if (!confirm('هل أنت متأكد من فك حظر الطالب وإعادة تعيين جهازه؟ سيسمح له ذلك بالدخول من جهاز جديد.')) return;
+        setStatusLoading(prev => ({ ...prev, [id]: true }));
+        try {
+            const res = await api.patch(`/admin/students/${id}/reset-device`);
+            setStudents(students.map(s => s._id === id ? res.data.student : s));
+            alert('تم فك الحظر وإعادة تعيين الجهاز بنجاح');
+        } catch (err) {
+            alert('حدث خطأ أثناء العملية');
         } finally {
             setStatusLoading(prev => ({ ...prev, [id]: false }));
         }
@@ -460,21 +474,29 @@ export default function AdminDashboard() {
                                                     </td>
                                                     <td className="p-6">
                                                         {activeTab === 'students' ? (
-                                                            <button
-                                                                onClick={() => toggleStatus(item._id)}
-                                                                disabled={statusLoading[item._id]}
-                                                                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all border ${item.isActive !== false
-                                                                    ? 'bg-green-500/10 border-green-500/20 text-green-500 hover:bg-green-500/20'
-                                                                    : 'bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500/20'
-                                                                    } ${statusLoading[item._id] ? 'opacity-50 cursor-wait' : ''}`}
-                                                            >
-                                                                {statusLoading[item._id] ? (
-                                                                    <RefreshCw size={14} className="animate-spin" />
-                                                                ) : (
-                                                                    <div className={`w-2 h-2 rounded-full ${item.isActive !== false ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]' : 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.4)]'}`}></div>
+                                                            <div className="flex flex-col gap-2">
+                                                                {item.isBanned && (
+                                                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-red-600/20 border border-red-500/30 text-red-500 mb-1">
+                                                                        <div className="w-2 h-2 rounded-full bg-red-600 animate-pulse"></div>
+                                                                        <span className="text-xs font-black">محظور أمنيًا</span>
+                                                                    </div>
                                                                 )}
-                                                                <span className="text-xs font-bold">{item.isActive !== false ? 'نشط' : 'معطل'}</span>
-                                                            </button>
+                                                                <button
+                                                                    onClick={() => toggleStatus(item._id)}
+                                                                    disabled={statusLoading[item._id]}
+                                                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all border ${item.isActive !== false
+                                                                        ? 'bg-green-500/10 border-green-500/20 text-green-500 hover:bg-green-500/20'
+                                                                        : 'bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500/20'
+                                                                        } ${statusLoading[item._id] ? 'opacity-50 cursor-wait' : ''}`}
+                                                                >
+                                                                    {statusLoading[item._id] ? (
+                                                                        <RefreshCw size={14} className="animate-spin" />
+                                                                    ) : (
+                                                                        <div className={`w-2 h-2 rounded-full ${item.isActive !== false ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]' : 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.4)]'}`}></div>
+                                                                    )}
+                                                                    <span className="text-xs font-bold">{item.isActive !== false ? 'نشط' : 'معطل'}</span>
+                                                                </button>
+                                                            </div>
                                                         ) : (
                                                             <div className="flex items-center gap-2">
                                                                 <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]"></div>
@@ -486,6 +508,9 @@ export default function AdminDashboard() {
                                                         <div className="flex items-center justify-center gap-3">
                                                             {activeTab === 'students' && (
                                                                 <>
+                                                                    <button onClick={() => handleResetDevice(item._id)} className="p-2.5 bg-orange-500/5 rounded-xl text-orange-500/50 hover:text-orange-500 hover:bg-orange-500/10 transition-all font-bold group/reset" title="فك الحظر وإعادة تعيين الجهاز">
+                                                                        <Smartphone size={16} className={item.isBanned ? 'animate-bounce' : ''} />
+                                                                    </button>
                                                                     <button onClick={() => fetchActivity(item)} className="p-2.5 bg-blue-500/5 rounded-xl text-blue-500/50 hover:text-blue-500 hover:bg-blue-500/10 transition-all" title="تواجد الطالب"><BarChart3 size={16} /></button>
                                                                     <button onClick={() => { setSelectedStudent(item); setShowPermissionsModal(true); }} className="p-2.5 bg-gold/5 rounded-xl text-gold/50 hover:text-gold hover:bg-gold/10 transition-all" title="الصلاحيات"><BookOpen size={16} /></button>
                                                                 </>

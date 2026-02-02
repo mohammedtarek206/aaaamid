@@ -113,10 +113,16 @@ router.patch('/students/:id/reset-device', async (req, res) => {
     try {
         const student = await Student.findByIdAndUpdate(
             req.params.id,
-            { deviceId: null, currentSessionId: null },
+            {
+                deviceId: null,
+                currentSessionId: null,
+                isBanned: false,
+                banReason: null,
+                deviceMismatchAttempts: 0
+            },
             { new: true }
         );
-        res.json({ message: 'Device reset successfully', student });
+        res.json({ message: 'Device reset and account unbanned successfully', student });
     } catch (err) {
         res.status(400).json({ error: err.message });
     }

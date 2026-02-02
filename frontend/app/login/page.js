@@ -41,7 +41,7 @@ export default function Login() {
     } catch (err) {
       if (err.response?.data?.needsRegistration) {
         setShowRegModal(true);
-      } else if (err.response?.data?.code === 'DEVICE_MISMATCH') {
+      } else if (err.response?.data?.code === 'DEVICE_MISMATCH' || err.response?.data?.code === 'ACCOUNT_BANNED') {
         setError(err.response?.data?.error);
       } else {
         setError(err.response?.data?.error || 'كود الطالب غير صحيح أو حدث خطأ ما');

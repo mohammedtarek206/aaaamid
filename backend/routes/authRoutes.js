@@ -17,17 +17,30 @@ router.post('/login/student', async (req, res) => {
             return res.status(404).json({ error: 'الكود غير صحيح أو الحساب معطل' });
         }
 
+        if (student.isBanned) {
+            return res.status(403).json({
+                error: 'تم حظر الحساب بسبب محاولة اختراق أمني (الدخول من جهاز مختلف). يرجى التواصل مع الدعم.',
+                code: 'ACCOUNT_BANNED'
+            });
+        }
+
         // Device Security Check
         const deviceId = req.body.deviceId || req.headers['x-device-id'];
 
         if (!student.deviceId && deviceId) {
             // First time login from a specific device (bind account to this device)
             student.deviceId = deviceId;
-        } else if (student.deviceId && student.deviceId !== deviceId) {
-            // Attempt to login from a different device
+        } else if (student.deviceId && deviceId && student.deviceId !== deviceId) {
+            // Attempt to login from a different device -> AUTO BAN
+            student.isBanned = true;
+            student.banReason = `Device Mismatch: Registered ${student.deviceId}, Tried ${deviceId}`;
+            student.deviceMismatchAttempts = (student.deviceMismatchAttempts || 0) + 1;
+            student.lastDeviceMismatch = Date.now();
+            await student.save();
+
             return res.status(403).json({
-                error: 'هذا الحساب مقيد بجهاز آخر. لا يمكن استخدام الحساب على أكثر من جهاز.',
-                code: 'DEVICE_MISMATCH'
+                error: 'تم حظر الحساب تلقائيًا لمحاولة الدخول من جهاز غير مصرح به.',
+                code: 'ACCOUNT_BANNED'
             });
         }
 

@@ -10,6 +10,10 @@ const studentSchema = new mongoose.Schema({
     isActivated: { type: Boolean, default: false },
     currentSessionId: { type: String, default: null }, // To handle single device login
     deviceId: { type: String, default: null }, // Unique device identifier
+    isBanned: { type: Boolean, default: false }, // Auto-ban on security violation
+    banReason: { type: String, default: null },
+    deviceMismatchAttempts: { type: Number, default: 0 },
+    lastDeviceMismatch: { type: Date, default: null },
     isSubscribed: { type: Boolean, default: false },
     subscriptionExpiry: { type: Date, default: null },
     lastLogin: { type: Date, default: null },

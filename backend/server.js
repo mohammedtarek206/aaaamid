@@ -16,7 +16,7 @@ app.use(cors({
     origin: true, // Allow all origins for easier deployment setup
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-device-id']
 }));
 
 const PORT = process.env.PORT || 5000;

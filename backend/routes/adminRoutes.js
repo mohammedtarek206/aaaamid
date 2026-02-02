@@ -109,6 +109,19 @@ router.patch('/students/:id/toggle-status', async (req, res) => {
     }
 });
 
+router.patch('/students/:id/reset-device', async (req, res) => {
+    try {
+        const student = await Student.findByIdAndUpdate(
+            req.params.id,
+            { deviceId: null, currentSessionId: null },
+            { new: true }
+        );
+        res.json({ message: 'Device reset successfully', student });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
 // Video Management
 router.post('/videos', async (req, res) => {
     try {

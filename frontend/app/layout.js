@@ -4,10 +4,10 @@ import ActivityTracker from '@/components/ActivityTracker';
 
 export const metadata = {
     title: {
-        default: 'العميد | مستر احمد شندي - منصة الرياضيات التعليمية',
-        template: '%s | مستر احمد شندي'
+        default: 'العميد أحمد شندي',
+        template: '%s | العميد أحمد شندي'
     },
-    description: 'منصة العميد التعليمية بقيادة مستر احمد شندي، أقوى منصة لتدريس الرياضيات للمرحلة الثانوية العامة. شرح مبسط، امتحانات دورية، ومتابعة مستمرة لضمان التفوق.',
+    description: 'منصة تعليمية متخصصة في شرح الرياضيات البحته والتطبيقيه لطلاب المرحله الثانويه.',
     keywords: ['مستر احمد شندي', 'احمد شندي', 'العميد', 'العميد في الرياضيات', 'رياضيات ثانوية عامة', 'منصة العميد', 'مدرس رياضيات', 'ثانوية عامة', 'Mr Ahmed Shendi', 'Shendi Math', 'mrahmedshendy', 'mr ahmed shendy', 'ahmedshendy', 'mrahmed-shendy'],
     authors: [{ name: 'Ahmed Shendi' }, { name: 'العميد' }],
     creator: 'Ahmed Shendi',

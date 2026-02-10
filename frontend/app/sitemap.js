@@ -1,5 +1,5 @@
 export default function sitemap() {
-    const baseUrl = 'https://mrahmed-shendy.com'; // Replace with your actual domain
+    const baseUrl = 'https://mrahmed-shendy.com';
 
     return [
         {
@@ -14,6 +14,41 @@ export default function sitemap() {
             changeFrequency: 'monthly',
             priority: 0.8,
         },
-        // Add other static routes here if necessary
+        {
+            url: `${baseUrl}/watch`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly',
+            priority: 0.9,
+        },
+        {
+            url: `${baseUrl}/exam`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly',
+            priority: 0.9,
+        },
+        {
+            url: `${baseUrl}/dashboard`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly',
+            priority: 0.9,
+        },
+        {
+            url: `${baseUrl}/courses`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly',
+            priority: 0.9,
+        },
+        {
+            url: `${baseUrl}/contact`,
+            lastModified: new Date(),
+            changeFrequency: 'monthly',
+            priority: 0.7,
+        },
+        {
+            url: `${baseUrl}/about`,
+            lastModified: new Date(),
+            changeFrequency: 'monthly',
+            priority: 0.7,
+        },
     ];
 }

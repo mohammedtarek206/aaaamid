@@ -5,6 +5,6 @@ export default function robots() {
             allow: '/',
             disallow: '/private/',
         },
-        sitemap: 'https://mrahmed-shendy.com/sitemap.xml', // Replace with your actual sitemap URL
+        sitemap: 'https://mrahmed-shendy.com/sitemap.xml',
     };
 }

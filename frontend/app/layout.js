@@ -12,6 +12,9 @@ export const metadata = {
     authors: [{ name: 'Ahmed Shendi' }, { name: 'العميد' }],
     creator: 'Ahmed Shendi',
     publisher: 'العميد',
+    verification: {
+        google: '1sL70BlEUIeH-SpjrwdMJ72f2aqiIIBc3yXHXPxiVxE',
+    },
     robots: {
         index: true,
         follow: true,

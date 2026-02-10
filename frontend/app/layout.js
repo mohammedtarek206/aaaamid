@@ -4,10 +4,10 @@ import ActivityTracker from '@/components/ActivityTracker';
 
 export const metadata = {
     title: {
-        default: 'العميد أحمد شندي',
-        template: '%s | العميد أحمد شندي'
+        default: 'منصه العميد احمد شندي',
+        template: '%s | منصه العميد احمد شندي'
     },
-    description: 'منصة تعليمية متخصصة في شرح الرياضيات البحته والتطبيقيه لطلاب المرحله الثانويه.',
+    description: 'منصه العميد احمد شندي منصه متخصصه في شرح ماده الرياضيات البحه والتطيبقيه لطلاب المرحله الثانويه ',
     keywords: ['مستر احمد شندي', 'احمد شندي', 'العميد', 'العميد في الرياضيات', 'رياضيات ثانوية عامة', 'منصة العميد', 'مدرس رياضيات', 'ثانوية عامة', 'Mr Ahmed Shendi', 'Shendi Math', 'mrahmedshendy', 'mr ahmed shendy', 'ahmedshendy', 'mrahmed-shendy'],
     authors: [{ name: 'Ahmed Shendi' }, { name: 'العميد' }],
     creator: 'Ahmed Shendi',

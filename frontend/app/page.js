@@ -224,7 +224,7 @@ export default function Home() {
             <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all z-10 pointer-events-none"></div>
             <video
               className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
-              src="/video1.mp4"
+              src="/IMG_7218.MP4"
               autoPlay
               muted
               loop
@@ -246,7 +246,7 @@ export default function Home() {
           >
             <div className="absolute inset-0 bg-gold/10 mix-blend-overlay group-hover:opacity-0 transition-opacity z-10"></div>
             <img
-              src="/image1.jpg"
+              src="/IMG_7222.PNG"
               alt="Moments"
               className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
             />
@@ -262,7 +262,7 @@ export default function Home() {
           >
             <div className="absolute inset-0 bg-gold/10 mix-blend-overlay group-hover:opacity-0 transition-opacity z-10"></div>
             <img
-              src="/image2.jpg"
+              src="/IMG_7219.PNG"
               alt="Moments"
               className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
             />
@@ -279,7 +279,7 @@ export default function Home() {
             <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all z-10 pointer-events-none"></div>
             <video
               className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
-              src="/video2.mp4"
+              src="/IMG_7217.MOV"
               autoPlay
               muted
               loop

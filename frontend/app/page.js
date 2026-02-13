@@ -213,81 +213,81 @@ export default function Home() {
           <div className="w-24 h-2 gold-gradient rounded-full mx-auto"></div>
         </div>
 
-        <div className="grid md:grid-cols-12 gap-6 h-auto md:h-[600px]">
-          {/* Highlight Video 1 - Large Item */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Video 1 */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="md:col-span-8 relative group rounded-[32px] overflow-hidden border border-white/10 hover:border-gold/30 transition-all shadow-2xl"
+            className="relative group rounded-[32px] overflow-hidden border border-white/10 hover:border-gold/50 transition-all shadow-2xl aspect-[9/16]"
           >
-            <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all z-10 pointer-events-none"></div>
             <video
-              className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
+              className="w-full h-full object-cover"
               src="/IMG_7218.MP4"
               autoPlay
               muted
               loop
               playsInline
             />
-            <div className="absolute bottom-0 right-0 p-8 z-20 bg-gradient-to-t from-black/90 to-transparent w-full">
-              <h3 className="text-2xl font-black text-white mb-2">شرح تفاعلي</h3>
-              <p className="text-gray-300 text-sm">أحدث التقنيات في تبسيط المعلومات</p>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity"></div>
+            <div className="absolute bottom-0 left-0 p-6 w-full">
+              <h3 className="text-xl font-black text-white mb-1">شرح تفاعلي</h3>
+              <div className="h-1 w-12 bg-gold/80 rounded-full"></div>
             </div>
           </motion.div>
 
-          {/* Side Image 1 - Vertical Item */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            viewport={{ once: true }}
-            className="md:col-span-4 relative group rounded-[32px] overflow-hidden border border-white/10 hover:border-gold/30 transition-all shadow-2xl"
-          >
-            <div className="absolute inset-0 bg-gold/10 mix-blend-overlay group-hover:opacity-0 transition-opacity z-10"></div>
-            <img
-              src="/IMG_7222.PNG"
-              alt="Moments"
-              className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
-            />
-          </motion.div>
-
-          {/* Side Image 2 - Vertical Item */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-            viewport={{ once: true }}
-            className="md:col-span-4 relative group rounded-[32px] overflow-hidden border border-white/10 hover:border-gold/30 transition-all shadow-2xl"
-          >
-            <div className="absolute inset-0 bg-gold/10 mix-blend-overlay group-hover:opacity-0 transition-opacity z-10"></div>
-            <img
-              src="/IMG_7219.PNG"
-              alt="Moments"
-              className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
-            />
-          </motion.div>
-
-          {/* Highlight Video 2 - Large Item */}
+          {/* Image 1 */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.1 }}
             viewport={{ once: true }}
-            className="md:col-span-8 relative group rounded-[32px] overflow-hidden border border-white/10 hover:border-gold/30 transition-all shadow-2xl"
+            className="relative group rounded-[32px] overflow-hidden border border-white/10 hover:border-gold/50 transition-all shadow-2xl aspect-[9/16]"
           >
-            <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all z-10 pointer-events-none"></div>
+            <img
+              src="/IMG_7222.PNG"
+              alt="Moments"
+              className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-1000"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity"></div>
+          </motion.div>
+
+          {/* Image 2 */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            viewport={{ once: true }}
+            className="relative group rounded-[32px] overflow-hidden border border-white/10 hover:border-gold/50 transition-all shadow-2xl aspect-[9/16]"
+          >
+            <img
+              src="/IMG_7219.PNG"
+              alt="Moments"
+              className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-1000"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity"></div>
+          </motion.div>
+
+          {/* Video 2 */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            viewport={{ once: true }}
+            className="relative group rounded-[32px] overflow-hidden border border-white/10 hover:border-gold/50 transition-all shadow-2xl aspect-[9/16]"
+          >
             <video
-              className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
+              className="w-full h-full object-cover"
               src="/IMG_7217.MOV"
               autoPlay
               muted
               loop
               playsInline
             />
-            <div className="absolute bottom-0 right-0 p-8 z-20 bg-gradient-to-t from-black/90 to-transparent w-full">
-              <h3 className="text-2xl font-black text-white mb-2">بيئة تعليمية متكاملة</h3>
-              <p className="text-gray-300 text-sm">نصنع القادة ولا نكتفي بالطلاب</p>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity"></div>
+            <div className="absolute bottom-0 left-0 p-6 w-full">
+              <h3 className="text-xl font-black text-white mb-1">بيئة متكاملة</h3>
+              <div className="h-1 w-12 bg-gold/80 rounded-full"></div>
             </div>
           </motion.div>
 

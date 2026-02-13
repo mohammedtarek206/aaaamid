@@ -73,15 +73,23 @@ export default function ScreenProtection() {
             }
         };
 
-        // 5. Detection of "Blur" (App switching/Control Center) - Potential Screen Recording
+        // 5. Detection of "Blur" (App switching/Control Center/Screenshot UI)
         const handleVisibilityChange = () => {
             if (document.hidden) {
-                // User left the app (potential screen record start)
-                // We can't ban immediately (false positives), but we can hide content
-                document.body.style.filter = 'blur(20px)';
+                setBlackout(true); // Immediate blackout
             } else {
-                document.body.style.filter = 'none';
+                // Optional: Keep blackout for a moment to annoy user or if strict mode
+                setBlackout(false);
             }
+        };
+
+        const handleWindowBlur = () => {
+            // Often triggers when screenshot UI overlay appears
+            setBlackout(true);
+        };
+
+        const handleWindowFocus = () => {
+            setBlackout(false);
         };
 
         window.addEventListener('contextmenu', handleContextMenu);
@@ -90,26 +98,28 @@ export default function ScreenProtection() {
         window.addEventListener('selectstart', handleSelectStart);
         window.addEventListener('touchstart', handleTouchStart, { passive: false });
         document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('blur', handleWindowBlur);
+        window.addEventListener('focus', handleWindowFocus);
 
         // Apply strict CSS for mobile
         const style = document.createElement('style');
         style.innerHTML = `
-            * {
-                -webkit-touch-callout: none !important;
-                -webkit-user-select: none !important;
-                -khtml-user-select: none !important;
-                -moz-user-select: none !important;
-                -ms-user-select: none !important;
-                user-select: none !important;
-                -webkit-tap-highlight-color: transparent !important;
-            }
-            img, video {
-                pointer-events: none !important;
-            }
-            @media print {
-                html, body { display: none !important; }
-            }
-        `;
+      * {
+        -webkit-touch-callout: none !important;
+        -webkit-user-select: none !important;
+        -khtml-user-select: none !important;
+        -moz-user-select: none !important;
+        -ms-user-select: none !important;
+        user-select: none !important;
+        -webkit-tap-highlight-color: transparent !important;
+      }
+      img, video {
+        pointer-events: none !important;
+      }
+      @media print {
+        html, body { display: none !important; }
+      }
+    `;
         document.head.appendChild(style);
 
         return () => {
@@ -119,6 +129,8 @@ export default function ScreenProtection() {
             window.removeEventListener('selectstart', handleSelectStart);
             window.removeEventListener('touchstart', handleTouchStart);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('blur', handleWindowBlur);
+            window.removeEventListener('focus', handleWindowFocus);
             if (document.head.contains(style)) document.head.removeChild(style);
         };
     }, [router]);
@@ -127,8 +139,12 @@ export default function ScreenProtection() {
         <>
             {/* Blackout Overlay */}
             {blackout && (
-                <div className="fixed inset-0 bg-black z-[10000] flex items-center justify-center text-white text-2xl font-bold">
-                    محاولة تصوير محظورة!
+                <div className="fixed inset-0 bg-black z-[10000] flex items-center justify-center text-center p-10">
+                    <div className="text-white">
+                        <div className="text-4xl font-bold mb-4">⚠️</div>
+                        <div className="text-xl font-bold mb-2">محاولة تصوير محظورة!</div>
+                        <div className="text-sm opacity-70">يمنع استخدام أدوات التصوير أو الخروج من التطبيق أثناء المشاهدة.</div>
+                    </div>
                 </div>
             )}
 

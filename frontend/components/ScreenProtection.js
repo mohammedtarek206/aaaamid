@@ -149,11 +149,11 @@ export default function ScreenProtection() {
             )}
 
             {/* Watermark Overlay */}
-            <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden flex flex-wrap content-between justify-between p-10 opacity-[0.04]">
+            <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden flex flex-wrap content-between justify-between p-10 opacity-[0.05]">
                 {/* Dynamic Watermark Grid to cover screen against phone capture */}
                 {Array.from({ length: 12 }).map((_, i) => (
                     <div key={i} className="transform -rotate-45 text-xl font-black text-gray-500 whitespace-nowrap select-none">
-                        {studentInfo ? `${studentInfo.name || studentInfo.code} - ${studentInfo.phone}` : 'العميد - El Amid Platform'}
+                        {studentInfo ? `${studentInfo.name || 'Student'} • ${studentInfo.code} • ${studentInfo.phone}` : 'العميد - El Amid Platform'}
                     </div>
                 ))}
             </div>

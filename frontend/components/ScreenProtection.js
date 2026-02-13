@@ -7,27 +7,34 @@ import api from '@/lib/api';
 export default function ScreenProtection() {
     const router = useRouter();
     const [studentInfo, setStudentInfo] = useState(null);
+    const [blackout, setBlackout] = useState(false);
 
     useEffect(() => {
         // Fetch student info for watermark
         const fetchStudent = async () => {
             try {
                 const token = localStorage.getItem('token');
-                if (!token) return;
-                const res = await api.get('/student/profile');
-                setStudentInfo(res.data);
+                if (token) {
+                    const res = await api.get('/student/profile');
+                    setStudentInfo(res.data);
+                }
             } catch (err) {
-                // Ignore errors if not logged in
+                console.error("Failed to fetch student profile", err);
             }
         };
         fetchStudent();
 
         const handleViolation = async (type) => {
             try {
-                await api.post('/student/violation', { type });
-                alert('تم حظر الحساب لمحاولة تصوير المحتوى. يرجى التواصل مع الدعم الفني.');
-                localStorage.removeItem('token');
-                router.push('/login');
+                setBlackout(true); // Immediate local penalty
+                if (localStorage.getItem('token')) {
+                    await api.post('/student/violation', { type });
+                    alert('تم حظر الحساب لمحاولة تصوير المحتوى. يرجى التواصل مع الدعم الفني.');
+                    localStorage.removeItem('token');
+                    router.push('/login');
+                } else {
+                    alert('ممنوع تصوير المحتوى!');
+                }
             } catch (err) {
                 console.error(err);
             }
@@ -43,18 +50,12 @@ export default function ScreenProtection() {
         const handleKeyDown = (e) => {
             if (e.key === 'PrintScreen' || (e.ctrlKey && e.key === 'p') || (e.ctrlKey && e.key === 's') || (e.metaKey && e.shiftKey)) {
                 e.preventDefault();
-                // Immediately black out body
-                document.body.style.display = 'none';
                 handleViolation('screenshot');
-                // Restore after delay (though user will be logged out)
-                setTimeout(() => { document.body.style.display = 'block'; }, 1000);
             }
         };
 
         const handleKeyUp = (e) => {
             if (e.key === 'PrintScreen') {
-                // Fallback if keydown didn't catch it
-                document.body.style.display = 'none';
                 handleViolation('screenshot');
             }
         };
@@ -105,6 +106,9 @@ export default function ScreenProtection() {
             img, video {
                 pointer-events: none !important;
             }
+            @media print {
+                html, body { display: none !important; }
+            }
         `;
         document.head.appendChild(style);
 
@@ -119,16 +123,24 @@ export default function ScreenProtection() {
         };
     }, [router]);
 
-    if (!studentInfo) return null;
-
     return (
-        <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden flex flex-wrap content-between justify-between p-10 opacity-[0.03]">
-            {/* Dynamic Watermark Grid to cover screen against phone capture */}
-            {Array.from({ length: 12 }).map((_, i) => (
-                <div key={i} className="transform -rotate-45 text-xl font-black text-gray-500 whitespace-nowrap select-none">
-                    {studentInfo.name || studentInfo.code} - {studentInfo.phone}
+        <>
+            {/* Blackout Overlay */}
+            {blackout && (
+                <div className="fixed inset-0 bg-black z-[10000] flex items-center justify-center text-white text-2xl font-bold">
+                    محاولة تصوير محظورة!
                 </div>
-            ))}
-        </div>
+            )}
+
+            {/* Watermark Overlay */}
+            <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden flex flex-wrap content-between justify-between p-10 opacity-[0.04]">
+                {/* Dynamic Watermark Grid to cover screen against phone capture */}
+                {Array.from({ length: 12 }).map((_, i) => (
+                    <div key={i} className="transform -rotate-45 text-xl font-black text-gray-500 whitespace-nowrap select-none">
+                        {studentInfo ? `${studentInfo.name || studentInfo.code} - ${studentInfo.phone}` : 'العميد - El Amid Platform'}
+                    </div>
+                ))}
+            </div>
+        </>
     );
 }

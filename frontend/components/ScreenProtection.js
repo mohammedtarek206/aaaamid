@@ -1,0 +1,134 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import api from '@/lib/api';
+
+export default function ScreenProtection() {
+    const router = useRouter();
+    const [studentInfo, setStudentInfo] = useState(null);
+
+    useEffect(() => {
+        // Fetch student info for watermark
+        const fetchStudent = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) return;
+                const res = await api.get('/student/profile');
+                setStudentInfo(res.data);
+            } catch (err) {
+                // Ignore errors if not logged in
+            }
+        };
+        fetchStudent();
+
+        const handleViolation = async (type) => {
+            try {
+                await api.post('/student/violation', { type });
+                alert('تم حظر الحساب لمحاولة تصوير المحتوى. يرجى التواصل مع الدعم الفني.');
+                localStorage.removeItem('token');
+                router.push('/login');
+            } catch (err) {
+                console.error(err);
+            }
+        };
+
+        // 1. Disable Right Click
+        const handleContextMenu = (e) => {
+            e.preventDefault();
+            return false;
+        };
+
+        // 2. Disable Print Screen / Special Keys
+        const handleKeyDown = (e) => {
+            if (e.key === 'PrintScreen' || (e.ctrlKey && e.key === 'p') || (e.ctrlKey && e.key === 's') || (e.metaKey && e.shiftKey)) {
+                e.preventDefault();
+                // Immediately black out body
+                document.body.style.display = 'none';
+                handleViolation('screenshot');
+                // Restore after delay (though user will be logged out)
+                setTimeout(() => { document.body.style.display = 'block'; }, 1000);
+            }
+        };
+
+        const handleKeyUp = (e) => {
+            if (e.key === 'PrintScreen') {
+                // Fallback if keydown didn't catch it
+                document.body.style.display = 'none';
+                handleViolation('screenshot');
+            }
+        };
+
+        // 3. Prevent Copy/Select/Drag
+        const handleSelectStart = (e) => {
+            e.preventDefault();
+        };
+
+        // 4. Mobile Specific: Prevent Long Press & Touch Callouts
+        const handleTouchStart = (e) => {
+            if (e.touches.length > 1) {
+                // Prevent multi-touch (often used for gestures)
+                e.preventDefault();
+            }
+        };
+
+        // 5. Detection of "Blur" (App switching/Control Center) - Potential Screen Recording
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                // User left the app (potential screen record start)
+                // We can't ban immediately (false positives), but we can hide content
+                document.body.style.filter = 'blur(20px)';
+            } else {
+                document.body.style.filter = 'none';
+            }
+        };
+
+        window.addEventListener('contextmenu', handleContextMenu);
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+        window.addEventListener('selectstart', handleSelectStart);
+        window.addEventListener('touchstart', handleTouchStart, { passive: false });
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        // Apply strict CSS for mobile
+        const style = document.createElement('style');
+        style.innerHTML = `
+            * {
+                -webkit-touch-callout: none !important;
+                -webkit-user-select: none !important;
+                -khtml-user-select: none !important;
+                -moz-user-select: none !important;
+                -ms-user-select: none !important;
+                user-select: none !important;
+                -webkit-tap-highlight-color: transparent !important;
+            }
+            img, video {
+                pointer-events: none !important;
+            }
+        `;
+        document.head.appendChild(style);
+
+        return () => {
+            window.removeEventListener('contextmenu', handleContextMenu);
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('keyup', handleKeyUp);
+            window.removeEventListener('selectstart', handleSelectStart);
+            window.removeEventListener('touchstart', handleTouchStart);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            if (document.head.contains(style)) document.head.removeChild(style);
+        };
+    }, [router]);
+
+    if (!studentInfo) return null;
+
+    return (
+        <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden flex flex-wrap content-between justify-between p-10 opacity-[0.03]">
+            {/* Dynamic Watermark Grid to cover screen against phone capture */}
+            {Array.from({ length: 12 }).map((_, i) => (
+                <div key={i} className="transform -rotate-45 text-xl font-black text-gray-500 whitespace-nowrap select-none">
+                    {studentInfo.name || studentInfo.code} - {studentInfo.phone}
+                </div>
+            ))}
+        </div>
+    );
+}

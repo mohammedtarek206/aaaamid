@@ -11,6 +11,38 @@ const router = express.Router();
 
 router.use(auth);
 
+// Security Violation Endpoint
+router.post('/violation', async (req, res) => {
+    try {
+        const { type } = req.body;
+        const student = await Student.findById(req.user.id);
+
+        if (!student) {
+            return res.status(404).json({ error: 'Student not found' });
+        }
+
+        // Auto-ban logic
+        student.isBanned = true;
+        student.banReason = type === 'screenshot'
+            ? 'محاولة تصوير الشاشة (Screen Capture)'
+            : 'نشاط مشبوه (Security Violation)';
+
+        await student.save();
+
+        // Log activity
+        const Activity = require('../models/Activity');
+        await Activity.create({
+            studentId: student._id,
+            action: 'security_violation',
+            details: { reason: student.banReason, type }
+        });
+
+        res.json({ message: 'Account banned due to security violation' });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
 // Get videos for student's grade
 router.get('/videos', async (req, res) => {
     try {

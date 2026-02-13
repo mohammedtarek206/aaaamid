@@ -1,6 +1,7 @@
 import './globals.css';
 import Footer from '@/components/Footer';
 import ActivityTracker from '@/components/ActivityTracker';
+import ScreenProtection from '@/components/ScreenProtection';
 
 export const metadata = {
     title: {
@@ -132,6 +133,7 @@ export default function RootLayout({ children }) {
             </head>
             <body>
                 <ActivityTracker />
+                <ScreenProtection />
                 {children}
                 <Footer />
             </body>

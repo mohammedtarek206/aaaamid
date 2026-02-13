@@ -24,8 +24,8 @@ router.post('/violation', async (req, res) => {
         // Auto-ban logic
         student.isBanned = true;
         student.banReason = type === 'screenshot'
-            ? 'محاولة تصوير الشاشة (Screen Capture)'
-            : 'نشاط مشبوه (Security Violation)';
+            ? 'محاولة سرقة المحتوى (Screen Capture)'
+            : 'انتهاك سياسة الخصوصية (Privacy Violation)';
 
         await student.save();
 

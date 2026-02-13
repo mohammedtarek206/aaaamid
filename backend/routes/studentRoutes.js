@@ -16,11 +16,16 @@ router.get('/videos', async (req, res) => {
     try {
         const student = await Student.findById(req.user.id);
         // Admin now has strict control. Students only see what is in accessibleVideos.
-        if (!student || !student.accessibleVideos || student.accessibleVideos.length === 0) {
-            return res.json([]);
-        }
+        // Admin now has strict control. Students see what is in accessibleVideos OR isGlobal for their grade/track.
+        const accessibleVideoIds = student.accessibleVideos || [];
 
-        const videos = await Video.find({ _id: { $in: student.accessibleVideos } }).sort({ createdAt: -1 });
+        const videos = await Video.find({
+            $or: [
+                { _id: { $in: accessibleVideoIds } },
+                { isGlobal: true, grade: student.grade, $or: [{ track: 'عام' }, { track: student.track }] }
+            ]
+        }).sort({ createdAt: -1 });
+
         res.json(videos);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -31,12 +36,18 @@ router.get('/videos', async (req, res) => {
 router.get('/exams', async (req, res) => {
     try {
         const student = await Student.findById(req.user.id);
-        // Admin now has strict control. Students only see what is in accessibleExams.
-        if (!student || !student.accessibleExams || student.accessibleExams.length === 0) {
-            return res.json([]);
-        }
 
-        const exams = await Exam.find({ _id: { $in: student.accessibleExams }, isActive: true }).sort({ createdAt: -1 });
+        // Admin now has strict control. Students see what is in accessibleExams OR isGlobal for their grade/track.
+        const accessibleExamIds = student.accessibleExams || [];
+
+        const exams = await Exam.find({
+            isActive: true, // Exams must be active
+            $or: [
+                { _id: { $in: accessibleExamIds } },
+                { isGlobal: true, grade: student.grade, $or: [{ track: 'عام' }, { track: student.track }] }
+            ]
+        }).sort({ createdAt: -1 });
+
         res.json(exams);
     } catch (err) {
         res.status(500).json({ error: err.message });

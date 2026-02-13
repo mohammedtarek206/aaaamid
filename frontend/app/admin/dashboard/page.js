@@ -97,8 +97,8 @@ export default function AdminDashboard() {
 
     const resetNewData = (tab) => {
         if (tab === 'students') setNewData({ grade: 1, name: '' });
-        else if (tab === 'videos') setNewData({ grade: 1, title: '', dailymotionId: '', unit: '', lesson: '' });
-        else if (tab === 'exams') setNewData({ grade: 1, title: '', duration: 30, attemptsAllowed: 1 });
+        else if (tab === 'videos') setNewData({ grade: 1, title: '', dailymotionId: '', unit: '', lesson: '', isGlobal: false });
+        else if (tab === 'exams') setNewData({ grade: 1, title: '', duration: 30, attemptsAllowed: 1, isGlobal: false });
         else if (tab === 'free-videos') setNewData({ title: '', youtubeId: '', description: '' });
         else setNewData({ grade: 1 });
     };
@@ -445,6 +445,12 @@ export default function AdminDashboard() {
                                                             <span className={`px-3 py-1 rounded-lg text-[10px] font-black ${item.track === 'علمي' ? 'bg-blue-500/10 text-blue-500' : item.track === 'أدبي' ? 'bg-purple-500/10 text-purple-500' : 'bg-gold/10 text-gold'}`}>
                                                                 {item.track || 'عام'}
                                                             </span>
+                                                            {item.isGlobal && (
+                                                                <div className="mt-2 text-[10px] bg-green-500/10 text-green-500 border border-green-500/20 px-2 py-0.5 rounded flex items-center justify-center gap-1">
+                                                                    <Users size={10} />
+                                                                    عام
+                                                                </div>
+                                                            )}
                                                         </td>
                                                     )}
                                                     <td className="p-6">
@@ -660,6 +666,15 @@ export default function AdminDashboard() {
                                                     </select>
                                                 </div>
                                             </div>
+                                            <label className="flex items-center gap-3 p-4 bg-white/5 rounded-xl cursor-pointer hover:bg-white/10 transition-colors">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={newData.isGlobal || false}
+                                                    onChange={e => setNewData({ ...newData, isGlobal: e.target.checked })}
+                                                    className="w-5 h-5 rounded border-gray-600 text-gold focus:ring-gold bg-transparent"
+                                                />
+                                                <span className="font-bold text-sm">متاح لجميع طلاب المرحلة (Global)</span>
+                                            </label>
                                         </>
                                     )}
 
@@ -701,6 +716,15 @@ export default function AdminDashboard() {
                                                     </select>
                                                 </div>
                                             </div>
+                                            <label className="flex items-center gap-3 p-4 bg-white/5 rounded-xl cursor-pointer hover:bg-white/10 transition-colors">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={newData.isGlobal || false}
+                                                    onChange={e => setNewData({ ...newData, isGlobal: e.target.checked })}
+                                                    className="w-5 h-5 rounded border-gray-600 text-gold focus:ring-gold bg-transparent"
+                                                />
+                                                <span className="font-bold text-sm">متاح لجميع طلاب المرحلة (Global)</span>
+                                            </label>
                                         </>
                                     )}
 

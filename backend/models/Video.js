@@ -7,7 +7,8 @@ const videoSchema = new mongoose.Schema({
     lesson: { type: String, required: true },
     dailymotionId: { type: String, required: true },
     track: { type: String, enum: ['عام', 'علمي', 'أدبي'], default: 'عام' },
-    views: { type: Number, default: 0 }
+    views: { type: Number, default: 0 },
+    isGlobal: { type: Boolean, default: false } // If true, visible to all students in grade
 }, { timestamps: true });
 
 videoSchema.index({ grade: 1, track: 1 });

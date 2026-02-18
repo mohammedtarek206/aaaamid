@@ -1040,11 +1040,8 @@ export default function AdminDashboard() {
 
                             {/* Metallic Sidebar */}
                             <div className="print-card-sidebar">
-                                <div className="print-photo-box">
-                                    <Users size={24} className="text-white/50" />
-                                </div>
                                 <div className="print-card-sidebar-text">
-                                    AL-AMID PORTAL
+                                    AL-AMID PORTAL • MATH
                                 </div>
                             </div>
 
@@ -1052,8 +1049,9 @@ export default function AdminDashboard() {
                             <div className="print-card-body" style={{ direction: 'rtl' }}>
                                 <div className="print-header">
                                     <div className="print-title accent-text flex items-center gap-2">
-                                        <GraduationCap size={16} /> منظومة العميد التعليمية
+                                        <GraduationCap size={14} /> منظومة العميد التعليمية
                                     </div>
+                                    <div className="text-[9px] font-black opacity-40">2025/2026</div>
                                 </div>
 
                                 <div className="print-student-name">{student.name}</div>
@@ -1071,10 +1069,36 @@ export default function AdminDashboard() {
                                     )}
                                 </div>
 
-                                <div className="print-code">{student.code}</div>
+                                <div className="print-content-row">
+                                    <div className="print-code-box">
+                                        {student.code}
+                                    </div>
+                                    <div className="print-qr-code">
+                                        <img
+                                            src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://www.mrahmed-shendy.com/`}
+                                            alt="QR Code"
+                                            className="w-full h-full"
+                                        />
+                                    </div>
+                                </div>
 
-                                <div className="print-footer">
-                                    الدعم الفني: <span className="accent-text" style={{ direction: 'ltr' }}>01284621015</span> <Phone size={10} />
+                                <div className="print-footer-info">
+                                    <div className="print-contact-row">
+                                        <div className="flex items-center gap-1">
+                                            <Phone size={8} className="accent-text" />
+                                            <span>أ. أحمد شندي: 01552229751 - 01552946832 - 01274053346</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-[8px] font-bold text-gray-400">
+                                        <ExternalLink size={8} className="accent-text" />
+                                        <span>www.mrahmed-shendy.com</span>
+                                    </div>
+                                </div>
+
+                                <div className="print-dev-info flex items-center justify-center gap-2">
+                                    <span>برمجة وتطوير: م. محمد طارق</span>
+                                    <span className="opacity-50">|</span>
+                                    <span style={{ direction: 'ltr' }}>01284621015</span>
                                 </div>
                             </div>
                         </div>

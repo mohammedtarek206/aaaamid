@@ -38,6 +38,9 @@ export default function ScreenProtection() {
         };
 
         const handleViolation = async (type) => {
+            const isAdminPath = window.location.pathname.startsWith('/admin');
+            if (isAdminPath) return; // Completely ignore violations for admins
+
             try {
                 triggerBlackout(); // Immediate local penalty
                 if (localStorage.getItem('token')) {
@@ -53,6 +56,8 @@ export default function ScreenProtection() {
             }
         };
 
+        const isAdminPath = window.location.pathname.startsWith('/admin');
+
         // 1. Disable Right Click
         const handleContextMenu = (e) => {
             e.preventDefault();
@@ -61,19 +66,13 @@ export default function ScreenProtection() {
 
         // 2. Disable Print Screen / Special Keys
         const handleKeyDown = (e) => {
-            const isAdminPath = window.location.pathname.startsWith('/admin');
-
             if (e.key === 'PrintScreen' || (e.ctrlKey && e.key === 's') || (e.metaKey && e.shiftKey)) {
                 e.preventDefault();
                 handleViolation('screenshot');
             }
-
-            // Allow Ctrl+P and Print only on Admin Dashboard
             if (e.ctrlKey && e.key === 'p') {
-                if (!isAdminPath) {
-                    e.preventDefault();
-                    handleViolation('screenshot');
-                }
+                e.preventDefault();
+                handleViolation('screenshot');
             }
         };
 
@@ -91,7 +90,6 @@ export default function ScreenProtection() {
         // 4. Mobile Specific: Prevent Long Press & Touch Callouts
         const handleTouchStart = (e) => {
             if (e.touches.length > 1) {
-                // Prevent multi-touch (often used for gestures)
                 e.preventDefault();
             }
         };
@@ -99,15 +97,13 @@ export default function ScreenProtection() {
         // 5. Aggressive Visibility/Blur Detection (Instant Blackout)
         const handleVisibilityChange = () => {
             if (document.hidden) {
-                triggerBlackout(); // Immediate blackout
+                triggerBlackout();
             } else {
-                // Keep blackout for 1 second to punish/deter
                 setTimeout(removeBlackout, 500);
             }
         };
 
         const handleWindowBlur = () => {
-            // Often triggers when screenshot UI overlay appears
             triggerBlackout();
         };
 
@@ -115,35 +111,36 @@ export default function ScreenProtection() {
             removeBlackout();
         };
 
-        window.addEventListener('contextmenu', handleContextMenu);
-        window.addEventListener('keydown', handleKeyDown);
-        window.addEventListener('keyup', handleKeyUp);
-        window.addEventListener('selectstart', handleSelectStart);
-        window.addEventListener('touchstart', handleTouchStart, { passive: false });
+        // Only attach security listeners if NOT an admin path
+        if (!isAdminPath) {
+            window.addEventListener('contextmenu', handleContextMenu);
+            window.addEventListener('keydown', handleKeyDown);
+            window.addEventListener('keyup', handleKeyUp);
+            window.addEventListener('selectstart', handleSelectStart);
+            window.addEventListener('touchstart', handleTouchStart, { passive: false });
 
-        // Critical Events for Mobile
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        window.addEventListener('blur', handleWindowBlur);
-        window.addEventListener('focus', handleWindowFocus);
-        document.addEventListener('freeze', triggerBlackout); // Experimental
-        document.addEventListener('resume', removeBlackout); // Experimental
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+            window.addEventListener('blur', handleWindowBlur);
+            window.addEventListener('focus', handleWindowFocus);
+            document.addEventListener('freeze', triggerBlackout);
+            document.addEventListener('resume', removeBlackout);
+        }
 
-        const isAdminPath = window.location.pathname.startsWith('/admin');
         const style = document.createElement('style');
         style.innerHTML = `
             * {
-                -webkit-touch-callout: none !important;
-                -webkit-user-select: none !important;
-                -khtml-user-select: none !important;
-                -moz-user-select: none !important;
-                -ms-user-select: none !important;
-                user-select: none !important;
+                -webkit-touch-callout: ${isAdminPath ? 'default' : 'none'} !important;
+                -webkit-user-select: ${isAdminPath ? 'text' : 'none'} !important;
+                -khtml-user-select: ${isAdminPath ? 'text' : 'none'} !important;
+                -moz-user-select: ${isAdminPath ? 'text' : 'none'} !important;
+                -ms-user-select: ${isAdminPath ? 'text' : 'none'} !important;
+                user-select: ${isAdminPath ? 'text' : 'none'} !important;
                 -webkit-tap-highlight-color: transparent !important;
-                -webkit-user-drag: none !important;
+                -webkit-user-drag: ${isAdminPath ? 'default' : 'none'} !important;
             }
             img, video {
-                pointer-events: none !important;
-                user-drag: none !important;
+                pointer-events: ${isAdminPath ? 'auto' : 'none'} !important;
+                user-drag: ${isAdminPath ? 'default' : 'none'} !important;
             }
             @media print {
                 ${isAdminPath ? '' : 'html, body { display: none !important; }'}

@@ -61,9 +61,19 @@ export default function ScreenProtection() {
 
         // 2. Disable Print Screen / Special Keys
         const handleKeyDown = (e) => {
-            if (e.key === 'PrintScreen' || (e.ctrlKey && e.key === 'p') || (e.ctrlKey && e.key === 's') || (e.metaKey && e.shiftKey)) {
+            const isAdminPath = window.location.pathname.startsWith('/admin');
+
+            if (e.key === 'PrintScreen' || (e.ctrlKey && e.key === 's') || (e.metaKey && e.shiftKey)) {
                 e.preventDefault();
                 handleViolation('screenshot');
+            }
+
+            // Allow Ctrl+P and Print only on Admin Dashboard
+            if (e.ctrlKey && e.key === 'p') {
+                if (!isAdminPath) {
+                    e.preventDefault();
+                    handleViolation('screenshot');
+                }
             }
         };
 
@@ -118,7 +128,7 @@ export default function ScreenProtection() {
         document.addEventListener('freeze', triggerBlackout); // Experimental
         document.addEventListener('resume', removeBlackout); // Experimental
 
-        // Apply strict CSS for mobile
+        const isAdminPath = window.location.pathname.startsWith('/admin');
         const style = document.createElement('style');
         style.innerHTML = `
             * {
@@ -136,7 +146,7 @@ export default function ScreenProtection() {
                 user-drag: none !important;
             }
             @media print {
-                html, body { display: none !important; }
+                ${isAdminPath ? '' : 'html, body { display: none !important; }'}
             }
         `;
         document.head.appendChild(style);

@@ -158,6 +158,17 @@
         direction: rtl !important;
     }
 
+    @media (max-width: 600px) {
+        .print-grid {
+            grid-template-columns: 1fr !important;
+        }
+
+        .print-card {
+            height: auto !important;
+            min-height: 300px;
+        }
+    }
+
     /* Premium Card Container */
     .print-card {
         page-break-inside: avoid !important;

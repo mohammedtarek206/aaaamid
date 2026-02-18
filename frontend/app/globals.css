@@ -150,26 +150,30 @@
         opacity: 1 !important;
     }
 
+    @page {
+        margin: 5mm;
+        size: A4;
+    }
+
     .print-grid {
         display: grid !important;
         grid-template-columns: repeat(2, 1fr) !important;
-        grid-template-rows: repeat(3, 1fr) !important;
-        gap: 10px !important;
+        grid-auto-rows: 80mm !important;
+        /* Fixed height for rows to ensure 3 rows fit */
+        gap: 8px !important;
         width: 100% !important;
-        height: 100% !important;
         direction: rtl !important;
-        padding: 5mm !important;
     }
 
     @media (max-width: 600px) {
         .print-grid {
             grid-template-columns: 1fr !important;
-            grid-template-rows: auto !important;
+            grid-auto-rows: auto !important;
         }
 
         .print-card {
             height: auto !important;
-            min-height: 280px;
+            min-height: 250px;
         }
     }
 
@@ -178,8 +182,8 @@
         page-break-inside: avoid !important;
         break-inside: avoid !important;
         position: relative;
-        height: 88mm !important;
-        /* Adjusted to fit 3 per page */
+        height: 80mm !important;
+        /* Strictly 80mm to fit 3 per page (240mm total) */
         background: #050505 !important;
         /* Rich Black */
         border-radius: 12px;

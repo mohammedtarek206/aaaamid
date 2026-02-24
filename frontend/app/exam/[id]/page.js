@@ -178,7 +178,8 @@ export default function ExamPage() {
                             <iframe
                                 src={`https://drive.google.com/file/d/${exam.driveLink.match(/\/d\/([\w-]+)/)?.[1] || exam.driveLink.match(/id=([\w-]+)/)?.[1] || exam.driveLink}/preview`}
                                 className="w-full h-full border-none relative z-10"
-                                allow="autoplay"
+                                allow="autoplay; fullscreen"
+                                allowFullScreen
                             ></iframe>
                             <div className="absolute bottom-6 left-6 z-20 flex gap-3">
                                 <a

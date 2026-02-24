@@ -79,13 +79,15 @@ export default function WatchVideo() {
             <motion.div
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="glass-panel overflow-hidden gold-border shadow-2xl relative aspect-video rounded-[32px]"
+              className="glass-panel gold-border shadow-2xl relative aspect-video rounded-[32px] overflow-hidden"
             >
               <div className="absolute inset-0 bg-black">
                 <iframe
-                  src={`https://www.dailymotion.com/embed/video/${extractDailymotionId(video.dailymotionId)}?api=postMessage&autoplay=1&mute=0&queue-enable=0&queue-autoplay-next=0&ui-logo=0&ui-start-screen-info=0`}
-                  allow="autoplay; fullscreen; picture-in-picture"
+                  src={`https://www.dailymotion.com/embed/video/${extractDailymotionId(video.dailymotionId)}?api=postMessage&autoplay=1&mute=0`}
+                  allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
                   allowFullScreen
+                  webkitallowfullscreen="true"
+                  mozallowfullscreen="true"
                   frameBorder="0"
                   width="100%"
                   height="100%"
@@ -112,7 +114,7 @@ export default function WatchVideo() {
                 مع العميد، سنقوم بفك شيفرة كل مسألة بخطوات منطقية وبسيطة تضمن لك الفهم الكامل.
               </p>
 
-              <div className="grid md:grid-cols-2 gap-8">
+              <div className="grid md:grid-cols-1 gap-8">
                 <div className="p-8 glass-panel gold-border bg-gold/5 rounded-[32px]">
                   <h4 className="font-black mb-4 flex items-center gap-3 gold-text"><Star size={20} /> أهداف المحاضرة</h4>
                   <ul className="text-sm text-text-dim font-bold space-y-3">
@@ -129,13 +131,6 @@ export default function WatchVideo() {
                       ربط المحتوى الحالي بالمواضيع السابقة لضمان تسلسل الأفكار.
                     </li>
                   </ul>
-                </div>
-                <div className="p-8 glass-panel border-red-500/10 bg-red-500/5 rounded-[32px]">
-                  <h4 className="font-black mb-4 flex items-center gap-3 text-red-400"><ShieldAlert size={20} /> تنبيه الأمان</h4>
-                  <p className="text-xs text-text-dim font-medium leading-relaxed">
-                    هذا الفيديو مخصص لك كطالب مسجل في منصة العميد. يمنع تداول كود الحساب أو تسجيل المحتوى،
-                    حيث أن النظام يقوم بالتعرف التلقائي على محاولات التسجيل ويقوم بحظر الحساب فوراً.
-                  </p>
                 </div>
               </div>
             </div>

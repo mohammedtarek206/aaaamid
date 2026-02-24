@@ -466,11 +466,13 @@ export default function Home() {
                     v.sourceType === 'dailymotion' ? (
                       <iframe
                         className="absolute inset-0 w-full h-full"
-                        src={`https://www.dailymotion.com/embed/video/${extractDailymotionId(v.youtubeId || v.dailymotionId)}?autoplay=1`}
+                        src={`https://www.dailymotion.com/embed/video/${extractDailymotionId(v.youtubeId || v.dailymotionId)}?autoplay=1&mute=0`}
                         title={v.title}
                         frameBorder="0"
-                        allow="autoplay; fullscreen"
+                        allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
                         allowFullScreen
+                        webkitallowfullscreen="true"
+                        mozallowfullscreen="true"
                       ></iframe>
                     ) : (
                       <iframe

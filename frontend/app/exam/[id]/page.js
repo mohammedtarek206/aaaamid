@@ -343,10 +343,9 @@ export default function ExamPage() {
                     ))
                 )}
 
-                <div className="py-20 text-center">
+                <div className="py-10 text-center">
                     <div className="inline-flex items-center gap-4 text-gray-600 bg-white/5 px-10 py-5 rounded-[24px] border border-white/5 backdrop-blur-xl">
-                        <ShieldAlert size={20} className="text-gold animate-pulse" />
-                        <span className="text-[10px] font-black uppercase tracking-[2px]">نظام حماية البيانات المشفر : مـراقـب بـواسـطة الـعمـيد</span>
+                        <span className="text-[10px] font-black uppercase tracking-[2px]">منصة العميد - طريقك للتفوق في الرياضيات</span>
                     </div>
                 </div>
             </main>

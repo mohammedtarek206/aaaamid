@@ -133,7 +133,6 @@ export default function RootLayout({ children }) {
             </head>
             <body>
                 <ActivityTracker />
-                <ScreenProtection />
                 {children}
                 <Footer />
             </body>

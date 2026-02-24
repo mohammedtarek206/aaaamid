@@ -21,13 +21,12 @@ router.post('/violation', async (req, res) => {
             return res.status(404).json({ error: 'Student not found' });
         }
 
-        // Auto-ban logic
-        student.isBanned = true;
-        student.banReason = type === 'screenshot'
-            ? 'محاولة سرقة المحتوى (Screen Capture)'
-            : 'انتهاك سياسة الخصوصية (Privacy Violation)';
-
-        await student.save();
+        // Auto-ban logic DISABLED
+        // student.isBanned = true;
+        // student.banReason = type === 'screenshot'
+        //     ? 'محاولة سرقة المحتوى (Screen Capture)'
+        //     : 'انتهاك سياسة الخصوصية (Privacy Violation)';
+        // await student.save();
 
         // Log activity
         const Activity = require('../models/Activity');

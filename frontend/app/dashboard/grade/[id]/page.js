@@ -36,7 +36,11 @@ export default function GradeDashboard() {
   }, [id, router]);
 
   const gradeNames = { '1': 'الصف الأول الثانوي', '2': 'الصف الثاني الثانوي', '3': 'الصف الثالث الثانوي' };
-  const logout = () => { localStorage.clear(); router.push('/login'); };
+  const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('student');
+    router.push('/login');
+  };
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-black">

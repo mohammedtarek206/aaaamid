@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { motion } from 'framer-motion';
@@ -15,6 +15,13 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+
+  useEffect(() => {
+    const savedCode = localStorage.getItem('saved_student_code');
+    if (savedCode) {
+      setCode(savedCode);
+    }
+  }, []);
 
   const handleLogin = async (e) => {
     e?.preventDefault();
@@ -31,6 +38,7 @@ export default function Login() {
 
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('student', JSON.stringify(response.data.student));
+      localStorage.setItem('saved_student_code', code);
 
       // Log simple login activity
       try {

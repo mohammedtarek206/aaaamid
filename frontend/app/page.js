@@ -26,9 +26,14 @@ export default function Home() {
     const fetchFreeVideos = async () => {
       try {
         const res = await api.get('/public/free-videos');
-        setFreeVideos(res.data);
+        if (Array.isArray(res.data)) {
+          setFreeVideos(res.data);
+        } else {
+          setFreeVideos([]);
+        }
       } catch (err) {
         console.error('Error fetching free videos:', err);
+        setFreeVideos([]);
       } finally {
         setLoading(false);
       }
@@ -455,7 +460,7 @@ export default function Home() {
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-12">
           <AnimatePresence>
-            {freeVideos.length > 0 ? freeVideos.map((v, i) => (
+            {Array.isArray(freeVideos) && freeVideos.length > 0 ? freeVideos.map((v, i) => (
               <motion.div
                 key={v._id}
                 initial={{ opacity: 0, y: 30 }}

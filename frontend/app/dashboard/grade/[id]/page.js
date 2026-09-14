@@ -24,8 +24,8 @@ export default function GradeDashboard() {
           api.get('/student/videos'),
           api.get('/student/exams')
         ]);
-        setVideos(vRes.data);
-        setExams(eRes.data);
+        setVideos(Array.isArray(vRes.data) ? vRes.data : []);
+        setExams(Array.isArray(eRes.data) ? eRes.data : []);
       } catch (err) {
         if (err.response?.status === 401) router.push('/login');
       } finally {

@@ -73,11 +73,11 @@ export default function AdminDashboard() {
                     api.get('/admin/results'),
                     api.get('/admin/free-videos')
                 ]);
-                setStudents(s.data);
-                setVideos(v.data);
-                setExams(e.data);
-                setResults(r.data);
-                setFreeVideos(fv.data);
+                setStudents(Array.isArray(s.data) ? s.data : []);
+                setVideos(Array.isArray(v.data) ? v.data : []);
+                setExams(Array.isArray(e.data) ? e.data : []);
+                setResults(Array.isArray(r.data) ? r.data : []);
+                setFreeVideos(Array.isArray(fv.data) ? fv.data : []);
             } catch (err) {
                 if (err.response?.status === 401 || err.response?.status === 403) {
                     localStorage.removeItem('token');
@@ -331,8 +331,8 @@ export default function AdminDashboard() {
                                     onClick={handlePrint}
                                     disabled={filteredData.length === 0 && selectedStudentIds.length === 0}
                                     className={`btn-outline !py-3 !px-6 !text-sm !rounded-xl transition-all ${selectedStudentIds.length > 0
-                                            ? '!border-gold !text-gold !bg-gold/10 shadow-[0_0_15px_rgba(201,160,80,0.2)] font-black'
-                                            : '!border-blue-500/30 !text-blue-400 hover:!bg-blue-500/10'
+                                        ? '!border-gold !text-gold !bg-gold/10 shadow-[0_0_15px_rgba(201,160,80,0.2)] font-black'
+                                        : '!border-blue-500/30 !text-blue-400 hover:!bg-blue-500/10'
                                         }`}
                                 >
                                     <FileText size={18} />

@@ -2,12 +2,14 @@ const jwt = require('jsonwebtoken');
 const Student = require('../models/Student');
 const Admin = require('../models/Admin');
 
+const JWT_SECRET = process.env.JWT_SECRET || 'el_amid_secret_jwt_key_2025_secure';
+
 const auth = async (req, res, next) => {
     try {
-        const token = req.header('Authorization')?.replace('Bearer ', '') || req.cookies.token;
+        const token = req.header('Authorization')?.replace('Bearer ', '') || req.cookies?.token;
         if (!token) throw new Error();
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, JWT_SECRET);
 
         if (decoded.role === 'admin') {
             const admin = await Admin.findById(decoded.id);

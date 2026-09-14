@@ -107,7 +107,7 @@ mongoose.connection.on('error', (err) => {
     console.error('❌ MongoDB runtime error:', err);
 });
 
-// Routes - Dual mounting (/api/auth AND /auth) to prevent Vercel rewrite 404s
+// Routes - Multi-mounting (/api/auth, /auth, /api, /) to prevent Vercel rewrite 404s
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const studentRoutes = require('./routes/studentRoutes');
@@ -115,6 +115,8 @@ const publicRoutes = require('./routes/publicRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/auth', authRoutes);
+app.use('/api', authRoutes);
+app.use('/', authRoutes);
 
 app.use('/api/admin', adminRoutes);
 app.use('/admin', adminRoutes);

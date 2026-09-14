@@ -66,47 +66,52 @@ async function handleProxy(request, { params }) {
     let lastResponse = null;
 
     for (const baseUrl of candidateUrls) {
-        // Strip trailing slash or /api suffix if present
         let cleanBase = baseUrl.replace(/\/+$/, '');
         if (cleanBase.endsWith('/api')) {
             cleanBase = cleanBase.substring(0, cleanBase.length - 4);
         }
-        const targetUrl = `${cleanBase}/api/${targetPath}${searchParams}`;
 
-        try {
-            const fetchOptions = {
-                method: request.method,
-                headers: forwardHeaders,
-                redirect: 'manual',
-            };
+        const candidatePaths = [
+            `${cleanBase}/api/${targetPath}${searchParams}`,
+            `${cleanBase}/${targetPath}${searchParams}`
+        ];
 
-            if (bodyBytes && bodyBytes.byteLength > 0) {
-                fetchOptions.body = bodyBytes;
+        for (const targetUrl of candidatePaths) {
+            try {
+                const fetchOptions = {
+                    method: request.method,
+                    headers: forwardHeaders,
+                    redirect: 'manual',
+                };
+
+                if (bodyBytes && bodyBytes.byteLength > 0) {
+                    fetchOptions.body = bodyBytes;
+                }
+
+                const res = await fetch(targetUrl, fetchOptions);
+
+                // If backend responds with non-404 status (200, 401, 400, etc.), return immediately
+                if (res.status !== 404 && res.status !== 502 && res.status !== 503) {
+                    const responseData = await res.arrayBuffer();
+                    const responseHeaders = new Headers();
+
+                    res.headers.forEach((val, key) => {
+                        const lowerKey = key.toLowerCase();
+                        if (!['content-encoding', 'content-length'].includes(lowerKey)) {
+                            responseHeaders.set(key, val);
+                        }
+                    });
+
+                    return new NextResponse(responseData, {
+                        status: res.status,
+                        statusText: res.statusText,
+                        headers: responseHeaders,
+                    });
+                }
+                lastResponse = res;
+            } catch (err) {
+                lastError = err;
             }
-
-            const res = await fetch(targetUrl, fetchOptions);
-
-            // Accept any valid status code from backend (including 200, 401, 400, 403)
-            if (res.status !== 404 && res.status !== 502 && res.status !== 503) {
-                const responseData = await res.arrayBuffer();
-                const responseHeaders = new Headers();
-
-                res.headers.forEach((val, key) => {
-                    const lowerKey = key.toLowerCase();
-                    if (!['content-encoding', 'content-length'].includes(lowerKey)) {
-                        responseHeaders.set(key, val);
-                    }
-                });
-
-                return new NextResponse(responseData, {
-                    status: res.status,
-                    statusText: res.statusText,
-                    headers: responseHeaders,
-                });
-            }
-            lastResponse = res;
-        } catch (err) {
-            lastError = err;
         }
     }
 

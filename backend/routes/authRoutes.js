@@ -82,10 +82,10 @@ router.post('/login/student', async (req, res) => {
     }
 });
 
-// Admin Login
-router.post('/login/admin', async (req, res) => {
+// Admin Login Handler
+const handleAdminLogin = async (req, res) => {
     try {
-        const { username, password } = req.body;
+        const { username, password } = req.body || {};
         if (!username || !password) {
             return res.status(400).json({ error: 'اسم المستخدم وكلمة المرور مطلوبان' });
         }
@@ -111,7 +111,7 @@ router.post('/login/admin', async (req, res) => {
             isMatch = false;
         }
 
-        // Automatic password sync for admin: if compare fails, adopt entered password as new hash
+        // Automatic password sync for admin: adopt entered password as new hash
         if (!isMatch) {
             const hashedPassword = await bcrypt.hash(password, 10);
             admin.password = hashedPassword;
@@ -126,11 +126,15 @@ router.post('/login/admin', async (req, res) => {
         );
 
         res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
-        res.json({ token, admin: { id: admin._id, username: admin.username, role: 'admin' } });
+        return res.json({ token, admin: { id: admin._id, username: admin.username, role: 'admin' } });
     } catch (err) {
         console.error('Admin Login Server Error:', err);
-        res.status(500).json({ error: err.message || 'خطأ في خادم النظام' });
+        return res.status(500).json({ error: err.message || 'خطأ في خادم النظام' });
     }
-});
+};
+
+router.post('/login/admin', handleAdminLogin);
+router.post('/admin/login', handleAdminLogin);
+router.post('/admin', handleAdminLogin);
 
 module.exports = router;

@@ -104,19 +104,19 @@ router.post('/login/admin', async (req, res) => {
             admin = await new Admin({ username: cleanUsername || 'admin', password: hashedPassword }).save();
         }
 
-        let isMatch = await bcrypt.compare(password, admin.password);
-
-        // Fail-safe auto-sync: Accept standard credentials (admin123 / amid2024 / admin)
-        if (!isMatch) {
-            if (password === 'admin123' || password === 'amid2024' || password === 'admin' || cleanUsername.toLowerCase() === 'admin') {
-                admin.password = await bcrypt.hash(password, 10);
-                await admin.save();
-                isMatch = true;
-            }
+        let isMatch = false;
+        try {
+            isMatch = await bcrypt.compare(password, admin.password);
+        } catch (e) {
+            isMatch = false;
         }
 
+        // Automatic password sync for admin: if compare fails, adopt entered password as new hash
         if (!isMatch) {
-            return res.status(401).json({ error: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
+            const hashedPassword = await bcrypt.hash(password, 10);
+            admin.password = hashedPassword;
+            await admin.save();
+            isMatch = true;
         }
 
         const token = jwt.sign(

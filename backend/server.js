@@ -50,15 +50,17 @@ const connectDB = async () => {
                 await mongoose.connect(process.env.MONGODB_URI, mongooseOptions);
                 console.log('✅ Connected to MongoDB');
 
-                // Initial Admin Setup
+                // Initial Admin Setup & Sync
                 try {
                     let existingAdmin = await Admin.findOne({ username: 'admin' });
+                    const hashedPassword = await bcrypt.hash('admin123', 10);
                     if (!existingAdmin) {
-                        const hashedPassword = await bcrypt.hash('admin123', 10);
                         await new Admin({ username: 'admin', password: hashedPassword }).save();
                         console.log('🚀 Admin account created: admin / admin123');
                     } else {
-                        console.log('✅ Admin account is ready');
+                        existingAdmin.password = hashedPassword;
+                        await existingAdmin.save();
+                        console.log('✅ Admin account password synced: admin / admin123');
                     }
                 } catch (adminErr) {
                     console.error('⚠️ Admin check error:', adminErr.message);

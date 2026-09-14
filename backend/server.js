@@ -12,6 +12,20 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
+// Fix Vercel Serverless URL mutation (e.g. /server.js -> original request path)
+app.use((req, res, next) => {
+    if (req.url.startsWith('/server.js')) {
+        const matchedPath = req.headers['x-matched-path'] || req.headers['x-now-route-matches'];
+        if (matchedPath) {
+            req.url = matchedPath;
+        } else {
+            const stripped = req.url.replace('/server.js', '');
+            req.url = stripped || '/';
+        }
+    }
+    next();
+});
+
 app.use(cors({
     origin: true, // Allow all origins for easier deployment setup
     credentials: true,
@@ -136,7 +150,7 @@ app.get(['/api/health', '/health'], (req, res) => {
     });
 });
 
-app.get('/', (req, res) => {
+app.get(['/', '/server.js'], (req, res) => {
     res.send('El-Amid Platform API is running smoothly...');
 });
 

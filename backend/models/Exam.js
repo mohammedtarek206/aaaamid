@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const examSchema = new mongoose.Schema({
     title: { type: String, required: true },
-    grade: { type: Number, required: true, enum: [1, 2, 3] },
+    grade: { type: Number, required: true, enum: [1, 2, 3, 4, 5] },
     duration: { type: Number, required: true }, // in minutes
     attemptsAllowed: { type: Number, default: 1 },
     isActive: { type: Boolean, default: true },

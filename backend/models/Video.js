@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const videoSchema = new mongoose.Schema({
     title: { type: String, required: true },
-    grade: { type: Number, required: true, enum: [1, 2, 3] },
+    grade: { type: Number, required: true, enum: [1, 2, 3, 4, 5] },
     unit: { type: String, required: true },
     lesson: { type: String, required: true },
     dailymotionId: { type: String, required: true },

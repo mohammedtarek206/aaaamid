@@ -362,7 +362,7 @@ export default function Home() {
         </div>
 
         <div className="grid lg:grid-cols-3 gap-12 relative z-10">
-          {[1, 2, 3].map((grade) => (
+          {[1, 2, 3, 4, 5].map((grade) => (
             <motion.div
               key={grade}
               whileHover={{ y: -15 }}
@@ -385,11 +385,15 @@ export default function Home() {
                     {grade === 1 && 'الصف الأول الثانوي'}
                     {grade === 2 && 'الصف الثاني الثانوي'}
                     {grade === 3 && 'الصف الثالث الثانوي'}
+                    {grade === 4 && 'الصف الثالث الإعدادي'}
+                    {grade === 5 && 'الصف الثاني بكالوريا'}
                   </h3>
                   <p className="text-gray-500 font-bold mb-10 leading-relaxed min-h-[80px]">
                     {grade === 1 && 'تأسيس شامل للرياضيات، بناء القاعدة الأساسية للنجاح في النظام الحديث.'}
                     {grade === 2 && 'التعمق في الجبر، التفاضل، وحساب المثلثات بأساليب مبتكرة.'}
                     {grade === 3 && 'سنة الحلم، المراجعات النهائية والتدريب المكثف على الامتحانات الشاملة.'}
+                    {grade === 4 && 'الاستعداد للمرحلة الثانوية بأساس قوي في الرياضيات والتفكير المنطقي.'}
+                    {grade === 5 && 'التميز والتفوق للمرحلة النهائية من خلال مراجعات شاملة وتدريبات مكثفة.'}
                   </p>
                   <Link href="/login" className="w-full py-5 rounded-xl border border-white/10 font-black flex items-center justify-center gap-4 group-hover:bg-gold group-hover:text-black hover:border-transparent transition-all">
                     سجل الآن <ArrowLeft size={18} />

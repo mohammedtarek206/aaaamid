@@ -35,7 +35,7 @@ export default function GradeDashboard() {
     fetchData();
   }, [id, router]);
 
-  const gradeNames = { '1': 'الصف الأول الثانوي', '2': 'الصف الثاني الثانوي', '3': 'الصف الثالث الثانوي' };
+  const gradeNames = { '1': 'الصف الأول الثانوي', '2': 'الصف الثاني الثانوي', '3': 'الصف الثالث الثانوي', '4': 'الصف الثالث الإعدادي', '5': 'الصف الثاني بكالوريا' };
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('student');

@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const studentSchema = new mongoose.Schema({
     name: { type: String, required: false }, // Optional until activated
     code: { type: String, required: true, unique: true },
-    grade: { type: Number, required: true, enum: [1, 2, 3] }, // 1st, 2nd, 3rd Secondary
+    grade: { type: Number, required: true, enum: [1, 2, 3, 4, 5] }, // 1st, 2nd, 3rd Sec, 3rd Prep, 2nd Bac
     track: { type: String, enum: ['عام', 'علمي', 'أدبي'], default: 'عام' },
     phone: { type: String },
     parentPhone: { type: String },

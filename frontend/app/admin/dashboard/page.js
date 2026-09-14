@@ -32,7 +32,30 @@ export default function AdminDashboard() {
     const [searchQuery, setSearchQuery] = useState('');
     const [editingId, setEditingId] = useState(null);
     const [showAnswersModal, setShowAnswersModal] = useState(false);
+    const [selectedStudentIds, setSelectedStudentIds] = useState([]);
+    const [selectedGradeFilter, setSelectedGradeFilter] = useState('all');
     const router = useRouter();
+
+    const toggleSelectStudent = (id) => {
+        setSelectedStudentIds(prev =>
+            prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+        );
+    };
+
+    const toggleSelectAllStudents = (currentFilteredData) => {
+        const currentFilteredIds = currentFilteredData.map(s => s._id);
+        const allSelected = currentFilteredIds.length > 0 && currentFilteredIds.every(id => selectedStudentIds.includes(id));
+        if (allSelected) {
+            setSelectedStudentIds(prev => prev.filter(id => !currentFilteredIds.includes(id)));
+        } else {
+            const newSet = new Set([...selectedStudentIds, ...currentFilteredIds]);
+            setSelectedStudentIds(Array.from(newSet));
+        }
+    };
+
+    const clearStudentSelection = () => {
+        setSelectedStudentIds([]);
+    };
 
     const extractDailymotionId = (input) => {
         if (!input) return '';
@@ -199,7 +222,13 @@ export default function AdminDashboard() {
 
     const getFilteredData = () => {
         const query = searchQuery.toLowerCase();
-        if (activeTab === 'students') return students.filter(s => s.name?.toLowerCase().includes(query) || s.code?.toLowerCase().includes(query));
+        if (activeTab === 'students') {
+            return students.filter(s => {
+                const matchesQuery = !query || s.name?.toLowerCase().includes(query) || s.code?.toLowerCase().includes(query);
+                const matchesGrade = selectedGradeFilter === 'all' || s.grade === parseInt(selectedGradeFilter);
+                return matchesQuery && matchesGrade;
+            });
+        }
         if (activeTab === 'videos') return videos.filter(v => v.title?.toLowerCase().includes(query) || v.unit?.toLowerCase().includes(query) || v.lesson?.toLowerCase().includes(query));
         if (activeTab === 'exams') return exams.filter(e => e.title?.toLowerCase().includes(query));
         if (activeTab === 'free-videos') return freeVideos.filter(fv => fv.title?.toLowerCase().includes(query) || fv.youtubeId?.toLowerCase().includes(query));
@@ -285,16 +314,35 @@ export default function AdminDashboard() {
                             </button>
                         )}
                         {activeTab === 'students' && (
-                            <div className="flex gap-4">
+                            <div className="flex items-center gap-3 flex-wrap">
+                                {selectedStudentIds.length > 0 && (
+                                    <div className="flex items-center gap-2 bg-gold/10 border border-gold/30 px-4 py-2.5 rounded-xl text-gold text-xs font-black">
+                                        <span>الأكواد المحددة: {selectedStudentIds.length}</span>
+                                        <button
+                                            type="button"
+                                            onClick={clearStudentSelection}
+                                            className="text-gray-400 hover:text-red-400 text-xs font-bold underline mr-1"
+                                        >
+                                            إلغاء التحديد
+                                        </button>
+                                    </div>
+                                )}
                                 <button
                                     onClick={handlePrint}
-                                    className="btn-outline !py-3 !px-8 !text-sm !rounded-xl !border-blue-500/30 !text-blue-400 hover:!bg-blue-500/10"
+                                    disabled={filteredData.length === 0 && selectedStudentIds.length === 0}
+                                    className={`btn-outline !py-3 !px-6 !text-sm !rounded-xl transition-all ${selectedStudentIds.length > 0
+                                            ? '!border-gold !text-gold !bg-gold/10 shadow-[0_0_15px_rgba(201,160,80,0.2)] font-black'
+                                            : '!border-blue-500/30 !text-blue-400 hover:!bg-blue-500/10'
+                                        }`}
                                 >
-                                    <FileText size={18} /> طباعة الأكواد
+                                    <FileText size={18} />
+                                    {selectedStudentIds.length > 0
+                                        ? `طباعة الأكواد المحددة (${selectedStudentIds.length})`
+                                        : 'طباعة الأكواد'}
                                 </button>
                                 <button
                                     onClick={() => setShowGenerateModal(true)}
-                                    className="btn-primary !py-3 !px-8 !text-sm !rounded-xl gold-gradient !text-black"
+                                    className="btn-primary !py-3 !px-6 !text-sm !rounded-xl gold-gradient !text-black"
                                 >
                                     <Key size={18} /> توليد أكواد تلقائي
                                 </button>
@@ -328,9 +376,9 @@ export default function AdminDashboard() {
                             <div className="luxury-card p-10 bg-gold/5 border-gold/10">
                                 <h4 className="text-xl font-black mb-8 flex items-center gap-3"><Users className="text-gold" /> الطلاب حسب المرحلة</h4>
                                 <div className="space-y-6">
-                                    {[1, 2, 3].map(g => (
+                                    {[1, 2, 3, 4, 5].map(g => (
                                         <div key={g} className="flex justify-between items-center">
-                                            <span className="text-gray-400 font-bold">{g === 3 ? 'الثالث الثانوي' : g === 2 ? 'الثاني الثانوي' : 'الأول الثانوي'}</span>
+                                            <span className="text-gray-400 font-bold">{g === 5 ? 'الثاني بكالوريا' : g === 4 ? 'الثالث الإعدادي' : g === 3 ? 'الثالث الثانوي' : g === 2 ? 'الثاني الثانوي' : 'الأول الثانوي'}</span>
                                             <span className="gold-text font-black text-lg">{students.filter(s => s.grade === g).length}</span>
                                         </div>
                                     ))}
@@ -370,7 +418,7 @@ export default function AdminDashboard() {
                     ) : (
                         <>
                             {/* Action Bar */}
-                            <div className="flex gap-4 mb-8">
+                            <div className="flex flex-col md:flex-row gap-4 mb-8">
                                 <div className="flex-1 relative group">
                                     <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-gold transition-colors" size={20} />
                                     <input
@@ -378,9 +426,25 @@ export default function AdminDashboard() {
                                         placeholder="ابحث بالاسم أو الكود..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full bg-[#0a0a0a] border border-white/5 p-4 pr-12 rounded-2xl focus:outline-none focus:border-gold/30 transition-all font-bold text-sm"
+                                        className="w-full bg-[#0a0a0a] border border-white/5 p-4 pr-12 rounded-2xl focus:outline-none focus:border-gold/30 transition-all font-bold text-sm text-white"
                                     />
                                 </div>
+                                {activeTab === 'students' && (
+                                    <div className="w-full md:w-64">
+                                        <select
+                                            value={selectedGradeFilter}
+                                            onChange={(e) => setSelectedGradeFilter(e.target.value)}
+                                            className="w-full bg-[#0a0a0a] border border-white/5 p-4 rounded-2xl focus:outline-none focus:border-gold/30 transition-all font-bold text-sm text-white appearance-none [&>option]:bg-[#020202]"
+                                        >
+                                            <option value="all">جميع الصفوف</option>
+                                            <option value="1">الصف الأول الثانوي</option>
+                                            <option value="2">الصف الثاني الثانوي</option>
+                                            <option value="3">الصف الثالث الثانوي</option>
+                                            <option value="4">الصف الثالث الإعدادي</option>
+                                            <option value="5">الصف الثاني بكالوريا</option>
+                                        </select>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="luxury-card border-white/5 overflow-hidden">
@@ -388,6 +452,17 @@ export default function AdminDashboard() {
                                     <table className="w-full text-right border-collapse">
                                         <thead className="bg-white/[0.02]">
                                             <tr>
+                                                {activeTab === 'students' && (
+                                                    <th className="p-6 text-center w-12">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={filteredData.length > 0 && filteredData.every(s => selectedStudentIds.includes(s._id))}
+                                                            onChange={() => toggleSelectAllStudents(filteredData)}
+                                                            className="w-4 h-4 rounded border-gray-600 text-gold focus:ring-gold bg-transparent cursor-pointer accent-gold"
+                                                            title="تحديد الكل"
+                                                        />
+                                                    </th>
+                                                )}
                                                 <th className="p-6 text-xs font-black text-gray-500 uppercase tracking-widest">
                                                     {activeTab === 'results' ? 'الطالب / الاختبار' : 'المعلومات'}
                                                 </th>
@@ -423,6 +498,16 @@ export default function AdminDashboard() {
                                                     transition={{ delay: idx * 0.05 }}
                                                     className="border-b border-white/[0.03] hover:bg-white/[0.01] transition-colors group"
                                                 >
+                                                    {activeTab === 'students' && (
+                                                        <td className="p-6 text-center" onClick={(e) => e.stopPropagation()}>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selectedStudentIds.includes(item._id)}
+                                                                onChange={() => toggleSelectStudent(item._id)}
+                                                                className="w-4 h-4 rounded border-gray-600 text-gold focus:ring-gold bg-transparent cursor-pointer accent-gold"
+                                                            />
+                                                        </td>
+                                                    )}
                                                     <td className="p-6">
                                                         <div className="font-black text-sm">{item.name || item.title || item.studentId?.name}</div>
                                                         <div className="text-[10px] text-gray-600 font-bold mt-1 uppercase">
@@ -472,9 +557,11 @@ export default function AdminDashboard() {
                                                             <div className="text-xs text-gray-500 max-w-[200px] truncate">{item.description || '---'}</div>
                                                         ) : (
                                                             <span className="px-4 py-1.5 bg-white/5 rounded-full text-[10px] font-black uppercase text-gray-400">
-                                                                {item.grade === 3 || item.examId?.grade === 3 ? 'الثالث الثانوي' :
-                                                                    item.grade === 2 || item.examId?.grade === 2 ? 'الثاني الثانوي' :
-                                                                        item.grade === 1 || item.examId?.grade === 1 ? 'الأول الثانوي' : '---'}
+                                                                {item.grade === 5 || item.examId?.grade === 5 ? 'الثاني بكالوريا' :
+                                                                    item.grade === 4 || item.examId?.grade === 4 ? 'الثالث الإعدادي' :
+                                                                        item.grade === 3 || item.examId?.grade === 3 ? 'الثالث الثانوي' :
+                                                                            item.grade === 2 || item.examId?.grade === 2 ? 'الثاني الثانوي' :
+                                                                                item.grade === 1 || item.examId?.grade === 1 ? 'الأول الثانوي' : '---'}
                                                             </span>
                                                         )}
                                                     </td>
@@ -609,6 +696,8 @@ export default function AdminDashboard() {
                                                         <option value="1">الأول الثانوي</option>
                                                         <option value="2">الثاني الثانوي</option>
                                                         <option value="3">الثالث الثانوي</option>
+                                                        <option value="4">الثالث الإعدادي</option>
+                                                        <option value="5">الثاني بكالوريا</option>
                                                     </select>
                                                 </div>
                                                 <div className="space-y-2">
@@ -650,6 +739,8 @@ export default function AdminDashboard() {
                                                         <option value="1">الأول الثانوي</option>
                                                         <option value="2">الثاني الثانوي</option>
                                                         <option value="3">الثالث الثانوي</option>
+                                                        <option value="4">الثالث الإعدادي</option>
+                                                        <option value="5">الثاني بكالوريا</option>
                                                     </select>
                                                 </div>
                                                 <div className="space-y-2">
@@ -700,6 +791,8 @@ export default function AdminDashboard() {
                                                         <option value="1">الأول الثانوي</option>
                                                         <option value="2">الثاني الثانوي</option>
                                                         <option value="3">الثالث الثانوي</option>
+                                                        <option value="4">الثالث الإعدادي</option>
+                                                        <option value="5">الثاني بكالوريا</option>
                                                     </select>
                                                 </div>
                                                 <div className="space-y-2">
@@ -837,6 +930,8 @@ export default function AdminDashboard() {
                                         <option value="1">الأول الثانوي</option>
                                         <option value="2">الثاني الثانوي</option>
                                         <option value="3">الثالث الثانوي</option>
+                                        <option value="4">الثالث الإعدادي</option>
+                                        <option value="5">الثاني بكالوريا</option>
                                     </select>
                                 </div>
                                 <div className="space-y-2">
@@ -1032,8 +1127,11 @@ export default function AdminDashboard() {
             {/* Hidden Print Area - Premium Black & Gold ID Cards */}
             <div id="print-area">
                 <div className="print-grid">
-                    {filteredData.filter(s => s.code).map((student, i) => (
-                        <div key={i} className={`print-card ${student.grade === 3 ? 'theme-gold' :
+                    {(selectedStudentIds.length > 0
+                        ? students.filter(s => s.code && selectedStudentIds.includes(s._id))
+                        : filteredData.filter(s => s.code)
+                    ).map((student, i) => (
+                        <div key={i} className={`print-card ${student.grade === 3 || student.grade === 5 ? 'theme-gold' :
                             student.grade === 2 ? 'theme-silver' :
                                 'theme-bronze'
                             }`}>
@@ -1049,7 +1147,7 @@ export default function AdminDashboard() {
                             <div className="print-card-body" style={{ direction: 'rtl' }}>
                                 <div className="print-header">
                                     <div className="print-title accent-text flex items-center gap-2">
-                                        <GraduationCap size={14} /> منظومة العميد التعليمية
+                                        <GraduationCap size={14} /> منصة العميد التعليمية
                                     </div>
                                     <div className="text-[9px] font-black opacity-40">2025/2026</div>
                                 </div>
@@ -1058,15 +1156,21 @@ export default function AdminDashboard() {
 
                                 <div className="print-details">
                                     <span className="print-tag text-white">
-                                        {student.grade === 3 ? 'الصف الثالث الثانوي' :
-                                            student.grade === 2 ? 'الصف الثاني الثانوي' :
-                                                'الصف الأول الثانوي'}
+                                        {student.grade === 5 ? 'الصف الثاني بكالوريا' :
+                                            student.grade === 4 ? 'الصف الثالث الإعدادي' :
+                                                student.grade === 3 ? 'الصف الثالث الثانوي' :
+                                                    student.grade === 2 ? 'الصف الثاني الثانوي' :
+                                                        'الصف الأول الثانوي'}
                                     </span>
                                     {student.track && (
                                         <span className="print-tag text-white">
                                             {student.track}
                                         </span>
                                     )}
+                                </div>
+
+                                <div className="text-[8px] font-bold text-gray-300 my-1">
+                                    استخدم هذا الكود لتسجيل الدخول إلى المنصة
                                 </div>
 
                                 <div className="print-content-row">

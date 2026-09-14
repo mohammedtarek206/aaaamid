@@ -14,6 +14,15 @@ const nextConfig = {
         config.resolve.alias['@'] = path.resolve(__dirname);
         return config;
     },
+    async rewrites() {
+        const backendUrl = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'https://el-amid-api.vercel.app';
+        return [
+            {
+                source: '/api/:path*',
+                destination: `${backendUrl}/api/:path*`,
+            },
+        ];
+    },
 };
 
 export default nextConfig;

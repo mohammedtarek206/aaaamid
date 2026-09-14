@@ -38,40 +38,63 @@ mongoose.set('bufferCommands', true); // Re-enable buffering but we will handle 
 const Admin = require('./models/Admin');
 const bcrypt = require('bcryptjs');
 
+let dbConnectionPromise = null;
+
 const connectDB = async () => {
-    try {
-        console.log('⏳ Connecting to MongoDB...');
-        await mongoose.connect(process.env.MONGODB_URI, mongooseOptions);
-        console.log('✅ Connected to MongoDB');
+    if (mongoose.connection.readyState >= 1) return;
 
-        // Initial Admin Setup
-        console.log('⏳ Checking Admin account...');
-        let existingAdmin = await Admin.findOne({ username: 'admin' });
-        const hashedPassword = await bcrypt.hash('admin123', 10);
+    if (!dbConnectionPromise) {
+        dbConnectionPromise = (async () => {
+            try {
+                console.log('⏳ Connecting to MongoDB...');
+                await mongoose.connect(process.env.MONGODB_URI, mongooseOptions);
+                console.log('✅ Connected to MongoDB');
 
-        if (!existingAdmin) {
-            await new Admin({ username: 'admin', password: hashedPassword }).save();
-            console.log('🚀 Admin account created: admin / admin123');
-        } else {
-            // Force reset password - uncomment ONLY if you lose access
-            // existingAdmin.password = hashedPassword; await existingAdmin.save(); console.log('🔄 Admin account password RESET to: admin123');
-            console.log('✅ Admin account is ready');
-        }
-
-        // Start Server ONLY after successful DB connection
-        app.listen(PORT, () => {
-            console.log(`🚀 Server is running on http://localhost:${PORT}`);
-            console.log(`📡 API Base URL: http://localhost:${PORT}/api`);
-        });
-
-    } catch (err) {
-        console.error('❌ MongoDB Connection Error:', err.message);
-        console.log('🔄 Retrying connection in 5 seconds...');
-        setTimeout(connectDB, 5000);
+                // Initial Admin Setup
+                try {
+                    let existingAdmin = await Admin.findOne({ username: 'admin' });
+                    if (!existingAdmin) {
+                        const hashedPassword = await bcrypt.hash('admin123', 10);
+                        await new Admin({ username: 'admin', password: hashedPassword }).save();
+                        console.log('🚀 Admin account created: admin / admin123');
+                    } else {
+                        console.log('✅ Admin account is ready');
+                    }
+                } catch (adminErr) {
+                    console.error('⚠️ Admin check error:', adminErr.message);
+                }
+            } catch (err) {
+                console.error('❌ MongoDB Connection Error:', err.message);
+                dbConnectionPromise = null;
+                throw err;
+            }
+        })();
     }
+    return dbConnectionPromise;
 };
 
-connectDB();
+// Initial connection attempt
+connectDB().catch(err => console.error('Initial DB connect attempt failed:', err.message));
+
+// Middleware to ensure DB connection for serverless function invocations
+app.use(async (req, res, next) => {
+    try {
+        if (mongoose.connection.readyState !== 1) {
+            await connectDB();
+        }
+        next();
+    } catch (err) {
+        res.status(500).json({ error: 'Database connection failed' });
+    }
+});
+
+// Start local HTTP server if running outside Vercel
+if (!process.env.VERCEL && process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`🚀 Server is running on http://localhost:${PORT}`);
+        console.log(`📡 API Base URL: http://localhost:${PORT}/api`);
+    });
+}
 
 // Monitor connection status
 mongoose.connection.on('disconnected', () => {
@@ -82,19 +105,26 @@ mongoose.connection.on('error', (err) => {
     console.error('❌ MongoDB runtime error:', err);
 });
 
-// Routes
+// Routes - Dual mounting (/api/auth AND /auth) to prevent Vercel rewrite 404s
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const publicRoutes = require('./routes/publicRoutes');
 
 app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes);
+
 app.use('/api/admin', adminRoutes);
+app.use('/admin', adminRoutes);
+
 app.use('/api/student', studentRoutes);
+app.use('/student', studentRoutes);
+
 app.use('/api/public', publicRoutes);
+app.use('/public', publicRoutes);
 
 // Health Check Endpoint for Monitoring
-app.get('/api/health', (req, res) => {
+app.get(['/api/health', '/health'], (req, res) => {
     res.json({
         status: 'UP',
         timestamp: new Date(),

@@ -28,7 +28,16 @@ export default function AdminLogin() {
             router.push('/admin/dashboard');
         } catch (err) {
             console.error('Login Error:', err);
-            const message = err.response?.data?.error || (err.code === 'ERR_NETWORK' ? 'لا يمكن الاتصال بالسيرفر - تأكد من تشغيل الباكيند' : 'اسم المستخدم أو كلمة المرور غير صحيحة');
+            let message = 'اسم المستخدم أو كلمة المرور غير صحيحة';
+            if (err.response?.data?.error) {
+                message = err.response.data.error;
+            } else if (err.response?.status === 404) {
+                message = 'خطأ 404: مسار تسجيل الدخول غير متوفر على السيرفر';
+            } else if (err.response?.status >= 500) {
+                message = 'خطأ في خادم النظام (500) - يرجى المحاولة لاحقاً';
+            } else if (err.code === 'ERR_NETWORK') {
+                message = 'لا يمكن الاتصال بالسيرفر - يرجى التحقق من الشبكة';
+            }
             setError(message);
         } finally {
             setIsLoading(false);

@@ -1,13 +1,10 @@
 import axios from 'axios';
 
 const getBaseURL = () => {
-    if (process.env.NEXT_PUBLIC_API_URL) {
-        return process.env.NEXT_PUBLIC_API_URL;
-    }
     if (typeof window !== 'undefined') {
         return '/api';
     }
-    return process.env.BACKEND_API_URL || 'http://localhost:5000/api';
+    return process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 };
 
 const api = axios.create({

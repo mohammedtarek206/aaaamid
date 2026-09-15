@@ -41,7 +41,6 @@ async function handleProxy(request, { params }) {
         process.env.BACKEND_API_URL,
         process.env.NEXT_PUBLIC_BACKEND_URL,
         process.env.NEXT_PUBLIC_API_URL,
-        'https://el-amid-api.vercel.app',
         'http://localhost:5000'
     ].filter(Boolean);
 

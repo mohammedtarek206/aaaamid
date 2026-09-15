@@ -12,22 +12,22 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
-// Fix Vercel Serverless URL mutation (e.g. /server.js -> original request path)
-app.use((req, res, next) => {
-    if (req.url.startsWith('/server.js')) {
-        const matchedPath = req.headers['x-matched-path'] || req.headers['x-now-route-matches'];
-        if (matchedPath) {
-            req.url = matchedPath;
-        } else {
-            const stripped = req.url.replace('/server.js', '');
-            req.url = stripped || '/';
-        }
-    }
-    next();
-});
+
+
+const allowedOrigins = [
+    'https://mrahmed-shendy.com',
+    'https://www.mrahmed-shendy.com',
+    'https://el-amid-platform.vercel.app',
+    'http://localhost:3000'
+];
 
 app.use(cors({
-    origin: true, // Allow all origins for easier deployment setup
+    origin: (origin, callback) => {
+        // Allow requests with no origin (e.g., curl, Postman, server-to-server)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) return callback(null, true);
+        return callback(new Error(`CORS blocked for origin: ${origin}`), false);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-device-id']
@@ -121,25 +121,16 @@ mongoose.connection.on('error', (err) => {
     console.error('❌ MongoDB runtime error:', err);
 });
 
-// Routes - Multi-mounting (/api/auth, /auth, /api, /) to prevent Vercel rewrite 404s
+// Routes
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const publicRoutes = require('./routes/publicRoutes');
 
 app.use('/api/auth', authRoutes);
-app.use('/auth', authRoutes);
-app.use('/api', authRoutes);
-app.use('/', authRoutes);
-
 app.use('/api/admin', adminRoutes);
-app.use('/admin', adminRoutes);
-
 app.use('/api/student', studentRoutes);
-app.use('/student', studentRoutes);
-
 app.use('/api/public', publicRoutes);
-app.use('/public', publicRoutes);
 
 // Health Check Endpoint for Monitoring
 app.get(['/api/health', '/health'], (req, res) => {

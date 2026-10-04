@@ -34,6 +34,9 @@ export default function AdminDashboard() {
     const [showAnswersModal, setShowAnswersModal] = useState(false);
     const [selectedStudentIds, setSelectedStudentIds] = useState([]);
     const [selectedGradeFilter, setSelectedGradeFilter] = useState('all');
+    const [deleteTarget, setDeleteTarget] = useState(null);
+    const [deletingLoading, setDeletingLoading] = useState(false);
+    const [deleteError, setDeleteError] = useState(null);
     const router = useRouter();
 
     const toggleSelectStudent = (id) => {
@@ -133,17 +136,38 @@ export default function AdminDashboard() {
         setShowAddModal(true);
     };
 
-    const handleDelete = async (id) => {
-        if (!confirm('هل أنت متأكد من الحذف؟')) return;
+    const openDeleteModal = (item) => {
+        setDeleteError(null);
+        setDeleteTarget({
+            id: item._id,
+            name: item.name || item.title || item.code || 'السجل',
+            code: item.code,
+            tab: activeTab
+        });
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteTarget) return;
+        setDeletingLoading(true);
+        setDeleteError(null);
         try {
-            await api.delete(`/admin/${activeTab}/${id}`);
-            if (activeTab === 'students') setStudents(students.filter(s => s._id !== id));
-            if (activeTab === 'videos') setVideos(videos.filter(v => v._id !== id));
-            if (activeTab === 'exams') setExams(exams.filter(e => e._id !== id));
-            if (activeTab === 'results') setResults(results.filter(r => r._id !== id));
-            if (activeTab === 'free-videos') setFreeVideos(freeVideos.filter(fv => fv._id !== id));
+            await api.delete(`/admin/${deleteTarget.tab}/${deleteTarget.id}`);
+            const id = deleteTarget.id;
+            if (deleteTarget.tab === 'students') {
+                setStudents(prev => prev.filter(s => s._id !== id));
+                setSelectedStudentIds(prev => prev.filter(sId => sId !== id));
+            }
+            if (deleteTarget.tab === 'videos') setVideos(prev => prev.filter(v => v._id !== id));
+            if (deleteTarget.tab === 'exams') setExams(prev => prev.filter(e => e._id !== id));
+            if (deleteTarget.tab === 'results') setResults(prev => prev.filter(r => r._id !== id));
+            if (deleteTarget.tab === 'free-videos') setFreeVideos(prev => prev.filter(fv => fv._id !== id));
+
+            setDeleteTarget(null);
         } catch (err) {
-            alert('حدث خطأ أثناء الحذف');
+            const errorMsg = err.response?.data?.error || err.message || 'حدث خطأ أثناء تنفيذ عملية الحذف';
+            setDeleteError(errorMsg);
+        } finally {
+            setDeletingLoading(false);
         }
     };
 
@@ -623,7 +647,7 @@ export default function AdminDashboard() {
                                                                     </button>
                                                                 </div>
                                                             )}
-                                                            <button onClick={() => handleDelete(item._id)} className="p-2.5 bg-red-500/5 rounded-xl text-red-500/50 hover:text-red-500 hover:bg-red-500/10 transition-all"><Trash2 size={16} /></button>
+                                                            <button onClick={() => openDeleteModal(item)} className="p-2.5 bg-red-500/5 rounded-xl text-red-500/50 hover:text-red-500 hover:bg-red-500/10 transition-all" title="حذف الطالب وكود الدخول"><Trash2 size={16} /></button>
                                                         </div>
                                                     </td>
                                                 </motion.tr>
@@ -1120,6 +1144,71 @@ export default function AdminDashboard() {
                                 </div>
                             </div>
                             <button onClick={() => setShowPermissionsModal(false)} className="btn-primary mt-8 !rounded-2xl !py-4">إغلاق</button>
+                        </motion.div>
+                    </div>
+                )}
+
+                {/* Delete Confirmation Modal */}
+                {deleteTarget && (
+                    <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm font-cairo">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="w-full max-w-md bg-[#0a0a0a] border border-white/10 rounded-[32px] p-8 shadow-2xl relative overflow-hidden"
+                        >
+                            <div className="flex items-center gap-4 mb-6 text-red-500">
+                                <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
+                                    <Trash2 size={24} />
+                                </div>
+                                <div className="text-right">
+                                    <h3 className="text-xl font-black text-white">تأكيد الحذف</h3>
+                                    <p className="text-xs text-gray-500 font-bold mt-1">عملية مسح نهائية</p>
+                                </div>
+                            </div>
+
+                            <div className="text-sm font-bold text-gray-300 text-right leading-relaxed mb-6 space-y-2">
+                                {deleteTarget.tab === 'students' ? (
+                                    <>
+                                        <p>هل أنت متأكد من حذف هذا الطالب وكود الدخول الخاص به؟</p>
+                                        <p className="text-red-400 text-xs font-normal">لا يمكن التراجع عن هذه العملية.</p>
+                                    </>
+                                ) : (
+                                    <p>هل أنت متأكد من حذف هذا العنصر؟ لا يمكن التراجع عن هذه العملية.</p>
+                                )}
+                            </div>
+
+                            {deleteError && (
+                                <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold text-right">
+                                    {deleteError}
+                                </div>
+                            )}
+
+                            <div className="flex gap-4 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => { if (!deletingLoading) setDeleteTarget(null); }}
+                                    disabled={deletingLoading}
+                                    className="flex-1 py-3.5 px-6 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 font-bold text-sm transition-all border border-white/5 disabled:opacity-50"
+                                >
+                                    إلغاء
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={confirmDelete}
+                                    disabled={deletingLoading}
+                                    className="flex-1 py-3.5 px-6 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-red-600/20"
+                                >
+                                    {deletingLoading ? (
+                                        <>
+                                            <RefreshCw size={16} className="animate-spin" />
+                                            <span>جاري الحذف...</span>
+                                        </>
+                                    ) : (
+                                        <span>حذف</span>
+                                    )}
+                                </button>
+                            </div>
                         </motion.div>
                     </div>
                 )}

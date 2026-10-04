@@ -5,6 +5,7 @@ const Video = require('../models/Video');
 const Exam = require('../models/Exam');
 const Question = require('../models/Question');
 const Activity = require('../models/Activity');
+const Result = require('../models/Result');
 const crypto = require('crypto');
 
 const router = express.Router();
@@ -51,8 +52,13 @@ router.put('/students/:id', async (req, res) => {
 
 router.delete('/students/:id', async (req, res) => {
     try {
-        await Student.findByIdAndDelete(req.params.id);
-        res.status(204).send();
+        const student = await Student.findByIdAndDelete(req.params.id);
+        if (!student) {
+            return res.status(404).json({ error: 'الطالب غير موجود أو تم حذفه بالفعل' });
+        }
+        await Result.deleteMany({ studentId: req.params.id });
+        await Activity.deleteMany({ studentId: req.params.id });
+        res.status(200).json({ message: 'تم حذف الطالب وكود الدخول وكافة البيانات المرتبطة به بنجاح' });
     } catch (err) {
         res.status(400).json({ error: err.message });
     }

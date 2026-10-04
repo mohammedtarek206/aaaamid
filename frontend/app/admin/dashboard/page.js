@@ -510,7 +510,7 @@ export default function AdminDashboard() {
                                                     {activeTab === 'free-videos' ? 'الوصف' : 'المعلومات الإضافية'}
                                                 </th>
                                                 <th className="p-6 text-xs font-black text-gray-500 uppercase tracking-widest">الحالة</th>
-                                                <th className="p-6 text-xs font-black text-gray-500 uppercase tracking-widest text-center">إجراءات</th>
+                                                <th className="p-6 text-xs font-black text-gray-500 uppercase tracking-widest text-center min-w-[260px]">إجراءات</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -621,33 +621,41 @@ export default function AdminDashboard() {
                                                             </div>
                                                         )}
                                                     </td>
-                                                    <td className="p-6">
-                                                        <div className="flex items-center justify-center gap-3">
+                                                    <td className="p-6 min-w-[260px]">
+                                                        <div className="flex items-center justify-center gap-2 flex-nowrap">
                                                             {activeTab === 'students' && (
                                                                 <>
-                                                                    <button onClick={() => handleResetDevice(item._id)} className="p-2.5 bg-orange-500/5 rounded-xl text-orange-500/50 hover:text-orange-500 hover:bg-orange-500/10 transition-all font-bold group/reset" title="فك الحظر وإعادة تعيين الجهاز">
+                                                                    <button onClick={() => handleResetDevice(item._id)} className="p-2 bg-orange-500/5 rounded-xl text-orange-500/50 hover:text-orange-500 hover:bg-orange-500/10 transition-all font-bold group/reset" title="فك الحظر وإعادة تعيين الجهاز">
                                                                         <Smartphone size={16} className={item.isBanned ? 'animate-bounce' : ''} />
                                                                     </button>
-                                                                    <button onClick={() => fetchActivity(item)} className="p-2.5 bg-blue-500/5 rounded-xl text-blue-500/50 hover:text-blue-500 hover:bg-blue-500/10 transition-all" title="تواجد الطالب"><BarChart3 size={16} /></button>
-                                                                    <button onClick={() => { setSelectedStudent(item); setShowPermissionsModal(true); }} className="p-2.5 bg-gold/5 rounded-xl text-gold/50 hover:text-gold hover:bg-gold/10 transition-all" title="الصلاحيات"><BookOpen size={16} /></button>
+                                                                    <button onClick={() => fetchActivity(item)} className="p-2 bg-blue-500/5 rounded-xl text-blue-500/50 hover:text-blue-500 hover:bg-blue-500/10 transition-all" title="تواجد الطالب"><BarChart3 size={16} /></button>
+                                                                    <button onClick={() => { setSelectedStudent(item); setShowPermissionsModal(true); }} className="p-2 bg-gold/5 rounded-xl text-gold/50 hover:text-gold hover:bg-gold/10 transition-all" title="الصلاحيات"><BookOpen size={16} /></button>
                                                                 </>
                                                             )}
                                                             {activeTab !== 'results' ? (
                                                                 <>
-                                                                    <button onClick={() => handleEditClick(item)} className="p-2.5 bg-white/5 rounded-xl text-gray-500 hover:text-white transition-all"><Edit2 size={16} /></button>
+                                                                    <button onClick={() => handleEditClick(item)} className="p-2 bg-white/5 rounded-xl text-gray-500 hover:text-white transition-all" title="تعديل"><Edit2 size={16} /></button>
                                                                     {activeTab === 'exams' && (
-                                                                        <button onClick={() => router.push(`/admin/dashboard/exam/${item._id}`)} className="p-2.5 bg-gold/5 rounded-xl text-gold/50 hover:text-gold hover:bg-gold/10 transition-all font-black text-[10px]">الأسئلة</button>
+                                                                        <button onClick={() => router.push(`/admin/dashboard/exam/${item._id}`)} className="p-2 bg-gold/5 rounded-xl text-gold/50 hover:text-gold hover:bg-gold/10 transition-all font-black text-[10px]">الأسئلة</button>
                                                                     )}
                                                                 </>
                                                             ) : (
                                                                 <div className="flex items-center gap-3">
-                                                                    <button onClick={() => fetchResultDetails(item)} className="p-2.5 bg-white/5 rounded-xl text-gray-500 hover:text-white transition-all flex items-center gap-2">
+                                                                    <button onClick={() => fetchResultDetails(item)} className="p-2 bg-white/5 rounded-xl text-gray-500 hover:text-white transition-all flex items-center gap-2">
                                                                         <ExternalLink size={16} />
                                                                         <span className="text-[10px] font-bold">عرض الإجابات</span>
                                                                     </button>
                                                                 </div>
                                                             )}
-                                                            <button onClick={() => openDeleteModal(item)} className="p-2.5 bg-red-500/5 rounded-xl text-red-500/50 hover:text-red-500 hover:bg-red-500/10 transition-all" title="حذف الطالب وكود الدخول"><Trash2 size={16} /></button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => openDeleteModal(item)}
+                                                                className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-xl transition-all font-bold text-xs flex items-center gap-1.5 shrink-0"
+                                                                title="حذف الطالب وكود الدخول"
+                                                            >
+                                                                <Trash2 size={14} />
+                                                                <span>حذف</span>
+                                                            </button>
                                                         </div>
                                                     </td>
                                                 </motion.tr>

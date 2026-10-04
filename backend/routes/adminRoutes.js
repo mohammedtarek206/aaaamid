@@ -64,6 +64,27 @@ router.delete('/students/:id', async (req, res) => {
     }
 });
 
+router.post('/students/batch-delete', async (req, res) => {
+    try {
+        const { ids } = req.body;
+
+        if (!Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({ error: 'لم يتم تحديد أي طلاب للحذف' });
+        }
+
+        const deleteResult = await Student.deleteMany({ _id: { $in: ids } });
+        await Result.deleteMany({ studentId: { $in: ids } });
+        await Activity.deleteMany({ studentId: { $in: ids } });
+
+        res.status(200).json({
+            message: `تم حذف ${deleteResult.deletedCount} طالب وأكوادهم والبيانات المرتبطة بهم بنجاح`,
+            deletedIds: ids
+        });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
 router.get('/students/:id/activity', async (req, res) => {
     try {
         const student = await Student.findById(req.params.id)

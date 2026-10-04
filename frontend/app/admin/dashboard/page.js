@@ -139,10 +139,33 @@ export default function AdminDashboard() {
     const openDeleteModal = (item) => {
         setDeleteError(null);
         setDeleteTarget({
+            mode: 'single',
             id: item._id,
             name: item.name || item.title || item.code || 'السجل',
             code: item.code,
             tab: activeTab
+        });
+    };
+
+    const openBatchDeleteModal = () => {
+        if (selectedStudentIds.length === 0) return;
+        setDeleteError(null);
+        setDeleteTarget({
+            mode: 'batch',
+            ids: [...selectedStudentIds],
+            count: selectedStudentIds.length,
+            tab: 'students'
+        });
+    };
+
+    const openDeleteAllModal = () => {
+        if (filteredData.length === 0) return;
+        setDeleteError(null);
+        setDeleteTarget({
+            mode: 'all',
+            ids: filteredData.map(s => s._id),
+            count: filteredData.length,
+            tab: 'students'
         });
     };
 
@@ -151,16 +174,26 @@ export default function AdminDashboard() {
         setDeletingLoading(true);
         setDeleteError(null);
         try {
-            await api.delete(`/admin/${deleteTarget.tab}/${deleteTarget.id}`);
-            const id = deleteTarget.id;
-            if (deleteTarget.tab === 'students') {
-                setStudents(prev => prev.filter(s => s._id !== id));
-                setSelectedStudentIds(prev => prev.filter(sId => sId !== id));
+            if (deleteTarget.mode === 'single') {
+                await api.delete(`/admin/${deleteTarget.tab}/${deleteTarget.id}`);
+                const id = deleteTarget.id;
+                if (deleteTarget.tab === 'students') {
+                    setStudents(prev => prev.filter(s => s._id !== id));
+                    setSelectedStudentIds(prev => prev.filter(sId => sId !== id));
+                }
+                if (deleteTarget.tab === 'videos') setVideos(prev => prev.filter(v => v._id !== id));
+                if (deleteTarget.tab === 'exams') setExams(prev => prev.filter(e => e._id !== id));
+                if (deleteTarget.tab === 'results') setResults(prev => prev.filter(r => r._id !== id));
+                if (deleteTarget.tab === 'free-videos') setFreeVideos(prev => prev.filter(fv => fv._id !== id));
+            } else if (deleteTarget.mode === 'batch' || deleteTarget.mode === 'all') {
+                const res = await api.post('/admin/students/batch-delete', {
+                    ids: deleteTarget.ids
+                });
+                const deletedIds = res.data.deletedIds || deleteTarget.ids;
+                const deletedSet = new Set(deletedIds);
+                setStudents(prev => prev.filter(s => !deletedSet.has(s._id)));
+                setSelectedStudentIds(prev => prev.filter(sId => !deletedSet.has(sId)));
             }
-            if (deleteTarget.tab === 'videos') setVideos(prev => prev.filter(v => v._id !== id));
-            if (deleteTarget.tab === 'exams') setExams(prev => prev.filter(e => e._id !== id));
-            if (deleteTarget.tab === 'results') setResults(prev => prev.filter(r => r._id !== id));
-            if (deleteTarget.tab === 'free-videos') setFreeVideos(prev => prev.filter(fv => fv._id !== id));
 
             setDeleteTarget(null);
         } catch (err) {
@@ -339,17 +372,38 @@ export default function AdminDashboard() {
                         )}
                         {activeTab === 'students' && (
                             <div className="flex items-center gap-3 flex-wrap">
-                                {selectedStudentIds.length > 0 && (
-                                    <div className="flex items-center gap-2 bg-gold/10 border border-gold/30 px-4 py-2.5 rounded-xl text-gold text-xs font-black">
-                                        <span>الأكواد المحددة: {selectedStudentIds.length}</span>
+                                {selectedStudentIds.length > 0 ? (
+                                    <>
+                                        <div className="flex items-center gap-2 bg-gold/10 border border-gold/30 px-4 py-2.5 rounded-xl text-gold text-xs font-black">
+                                            <span>الأكواد المحددة: {selectedStudentIds.length}</span>
+                                            <button
+                                                type="button"
+                                                onClick={clearStudentSelection}
+                                                className="text-gray-400 hover:text-red-400 text-xs font-bold underline mr-1"
+                                            >
+                                                إلغاء التحديد
+                                            </button>
+                                        </div>
                                         <button
                                             type="button"
-                                            onClick={clearStudentSelection}
-                                            className="text-gray-400 hover:text-red-400 text-xs font-bold underline mr-1"
+                                            onClick={openBatchDeleteModal}
+                                            className="btn-outline !py-3 !px-5 !text-sm !rounded-xl !border-red-500/50 !text-red-400 hover:!bg-red-500/10 font-black flex items-center gap-2"
                                         >
-                                            إلغاء التحديد
+                                            <Trash2 size={18} />
+                                            حذف الأكواد المحددة ({selectedStudentIds.length})
                                         </button>
-                                    </div>
+                                    </>
+                                ) : (
+                                    filteredData.length > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={openDeleteAllModal}
+                                            className="btn-outline !py-3 !px-5 !text-sm !rounded-xl !border-red-500/30 !text-red-400 hover:!bg-red-500/10 font-black flex items-center gap-2"
+                                        >
+                                            <Trash2 size={18} />
+                                            حذف الكل ({filteredData.length})
+                                        </button>
+                                    )
                                 )}
                                 <button
                                     onClick={handlePrint}
@@ -1170,13 +1224,27 @@ export default function AdminDashboard() {
                                     <Trash2 size={24} />
                                 </div>
                                 <div className="text-right">
-                                    <h3 className="text-xl font-black text-white">تأكيد الحذف</h3>
+                                    <h3 className="text-xl font-black text-white">
+                                        {deleteTarget.mode === 'batch' ? 'تأكيد حذف الأكواد المحددة' :
+                                            deleteTarget.mode === 'all' ? 'تأكيد حذف جميع الطلاب' :
+                                                'تأكيد الحذف'}
+                                    </h3>
                                     <p className="text-xs text-gray-500 font-bold mt-1">عملية مسح نهائية</p>
                                 </div>
                             </div>
 
                             <div className="text-sm font-bold text-gray-300 text-right leading-relaxed mb-6 space-y-2">
-                                {deleteTarget.tab === 'students' ? (
+                                {deleteTarget.mode === 'batch' ? (
+                                    <>
+                                        <p>هل أنت متأكد من حذف الأكواد المحددة وعددهم ({deleteTarget.count}) من الطلاب وأكوادهم؟</p>
+                                        <p className="text-red-400 text-xs font-normal">لا يمكن التراجع عن هذه العملية.</p>
+                                    </>
+                                ) : deleteTarget.mode === 'all' ? (
+                                    <>
+                                        <p>هل أنت متأكد من حذف جميع الطلاب المعروضين وعددهم ({deleteTarget.count} طالب) وكافة أكوادهم والبيانات المرتبطة بهم؟</p>
+                                        <p className="text-red-400 text-xs font-normal">تحذير: هذه العملية ستقوم بمشح جميع الطلاب في النطاق الحالي تمامًا.</p>
+                                    </>
+                                ) : deleteTarget.tab === 'students' ? (
                                     <>
                                         <p>هل أنت متأكد من حذف هذا الطالب وكود الدخول الخاص به؟</p>
                                         <p className="text-red-400 text-xs font-normal">لا يمكن التراجع عن هذه العملية.</p>
@@ -1213,7 +1281,7 @@ export default function AdminDashboard() {
                                             <span>جاري الحذف...</span>
                                         </>
                                     ) : (
-                                        <span>حذف</span>
+                                        <span>حذف ({deleteTarget.count || 1})</span>
                                     )}
                                 </button>
                             </div>

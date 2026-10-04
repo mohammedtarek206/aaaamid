@@ -37,9 +37,6 @@ const PORT = process.env.PORT || 5000;
 
 // Connect to MongoDB with optimized production settings
 const mongooseOptions = {
-    // These options are now default in Mongoose 6+, but kept for clarity/compatibility
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
     // Robust settings for VPS/Serverless
     serverSelectionTimeoutMS: 10000, // Wait up to 10s for server selection
     socketTimeoutMS: 45000,         // Close sockets after 45s of inactivity
@@ -60,8 +57,12 @@ const connectDB = async () => {
     if (!dbConnectionPromise) {
         dbConnectionPromise = (async () => {
             try {
+                const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/el-amid';
+                if (!process.env.MONGODB_URI) {
+                    console.warn('⚠️ MONGODB_URI environment variable is not defined!');
+                }
                 console.log('⏳ Connecting to MongoDB...');
-                await mongoose.connect(process.env.MONGODB_URI, mongooseOptions);
+                await mongoose.connect(mongoUri, mongooseOptions);
                 console.log('✅ Connected to MongoDB');
 
                 // Initial Admin Setup & Sync
@@ -100,7 +101,8 @@ app.use(async (req, res, next) => {
         }
         next();
     } catch (err) {
-        res.status(500).json({ error: 'Database connection failed' });
+        console.error('🔥 DB Connection Error:', err);
+        res.status(500).json({ error: 'Database connection failed', message: err.message });
     }
 });
 

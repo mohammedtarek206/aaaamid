@@ -9,6 +9,7 @@ import {
     RefreshCw, PlayCircle, Layout, BookOpen, Trophy, Phone, Smartphone
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { extractDailymotionId } from '@/lib/dailymotion';
 
 export default function AdminDashboard() {
     const [activeTab, setActiveTab] = useState('students');
@@ -58,12 +59,6 @@ export default function AdminDashboard() {
 
     const clearStudentSelection = () => {
         setSelectedStudentIds([]);
-    };
-
-    const extractDailymotionId = (input) => {
-        if (!input) return '';
-        const match = input.match(/(?:dailymotion\.com(?:\/video|\/embed\/video)\/|dai\.ly\/)([a-zA-Z0-9]+)/);
-        return match ? match[1] : input.trim();
     };
 
     useEffect(() => {
@@ -806,7 +801,7 @@ export default function AdminDashboard() {
                                     {activeTab === 'videos' && (
                                         <>
                                             <input type="text" value={newData.title || ''} placeholder="عنوان المحاضرة" onChange={e => setNewData({ ...newData, title: e.target.value })} className="w-full bg-white/5 border border-white/5 p-4 rounded-xl focus:outline-none focus:border-gold/30 font-bold" required />
-                                            <input type="text" value={newData.dailymotionId || ''} placeholder="Dailymotion ID" onChange={e => setNewData({ ...newData, dailymotionId: e.target.value })} className="w-full bg-white/5 border border-white/5 p-4 rounded-xl focus:outline-none focus:border-gold/30 font-bold" required />
+                                            <input type="text" value={newData.dailymotionId || ''} placeholder="رابط أو معرف Dailymotion Video (مثال: https://dai.ly/k1c0grIPFvdn2gEAng4)" onChange={e => setNewData({ ...newData, dailymotionId: e.target.value })} className="w-full bg-white/5 border border-white/5 p-4 rounded-xl focus:outline-none focus:border-gold/30 font-bold" required />
                                             <div className="grid grid-cols-2 gap-4">
                                                 <input type="text" value={newData.unit || ''} placeholder="الوحدة" onChange={e => setNewData({ ...newData, unit: e.target.value })} className="w-full bg-white/5 border border-white/5 p-4 rounded-xl focus:outline-none focus:border-gold/30 font-bold" required />
                                                 <input type="text" value={newData.lesson || ''} placeholder="الدرس" onChange={e => setNewData({ ...newData, lesson: e.target.value })} className="w-full bg-white/5 border border-white/5 p-4 rounded-xl focus:outline-none focus:border-gold/30 font-bold" required />

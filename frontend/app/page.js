@@ -9,18 +9,13 @@ import {
   ArrowLeft, GraduationCap, Play, Youtube, Info, CheckCircle2,
   Facebook, MessageCircle, Instagram, Code, Target, Zap, Heart, ArrowRight, CheckCircle, Shield, Sparkles, Clock
 } from 'lucide-react';
+import { extractDailymotionId, getDailymotionEmbedUrl } from '@/lib/dailymotion';
 
 export default function Home() {
   const [freeVideos, setFreeVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('courses');
   const [playingId, setPlayingId] = useState(null);
-
-  const extractDailymotionId = (input) => {
-    if (!input) return '';
-    const match = input.match(/(?:dailymotion\.com(?:\/video|\/embed\/video)\/|dai\.ly\/)([a-zA-Z0-9]+)/);
-    return match ? match[1] : input.trim();
-  };
 
   useEffect(() => {
     const fetchFreeVideos = async () => {
@@ -474,14 +469,12 @@ export default function Home() {
                   {playingId === v._id ? (
                     v.sourceType === 'dailymotion' ? (
                       <iframe
-                        className="absolute inset-0 w-full h-full"
-                        src={`https://www.dailymotion.com/embed/video/${extractDailymotionId(v.youtubeId || v.dailymotionId)}?autoplay=1&mute=0`}
+                        className="absolute inset-0 w-full h-full border-0"
+                        src={getDailymotionEmbedUrl(v.youtubeId || v.dailymotionId, { autoplay: true })}
                         title={v.title}
-                        frameBorder="0"
-                        allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+                        allow="autoplay; fullscreen; picture-in-picture; web-share"
                         allowFullScreen
-                        webkitallowfullscreen="true"
-                        mozallowfullscreen="true"
+                        referrerPolicy="strict-origin-when-cross-origin"
                       ></iframe>
                     ) : (
                       <iframe

@@ -5,17 +5,12 @@ import { useParams, useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Play, Layout, BookOpen, ShieldAlert, Clock, Star, Info, GraduationCap } from 'lucide-react';
+import { extractDailymotionId, getDailymotionEmbedUrl } from '@/lib/dailymotion';
 
 export default function WatchVideo() {
   const { id } = useParams();
   const [video, setVideo] = useState(null);
   const router = useRouter();
-
-  const extractDailymotionId = (input) => {
-    if (!input) return '';
-    const match = input.match(/(?:dailymotion\.com(?:\/video|\/embed\/video)\/|dai\.ly\/)([a-zA-Z0-9]+)/);
-    return match ? match[1] : input.trim();
-  };
 
   useEffect(() => {
     const fetchVideo = async () => {
@@ -83,15 +78,13 @@ export default function WatchVideo() {
             >
               <div className="absolute inset-0 bg-black">
                 <iframe
-                  src={`https://www.dailymotion.com/embed/video/${extractDailymotionId(video.dailymotionId)}?api=postMessage&autoplay=1&mute=0`}
-                  allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+                  src={getDailymotionEmbedUrl(video.dailymotionId, { autoplay: true })}
+                  allow="autoplay; fullscreen; picture-in-picture; web-share"
                   allowFullScreen
-                  webkitallowfullscreen="true"
-                  mozallowfullscreen="true"
-                  frameBorder="0"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  className="absolute inset-0 w-full h-full border-0"
                   width="100%"
                   height="100%"
-                  className="absolute inset-0 w-full h-full"
                 ></iframe>
               </div>
             </motion.div>

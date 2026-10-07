@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 const nextConfig = {
     reactStrictMode: true,
     images: {
-        domains: ['www.dailymotion.com'],
+        domains: ['www.dailymotion.com', 'geo.dailymotion.com', 'touch.dailymotion.com'],
     },
     webpack: (config) => {
         config.resolve.alias['@'] = path.resolve(__dirname);

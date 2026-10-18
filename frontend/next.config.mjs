@@ -14,6 +14,20 @@ const nextConfig = {
         config.resolve.alias['@'] = path.resolve(__dirname);
         return config;
     },
+    async headers() {
+        return [
+            {
+                // Allow Dailymotion SDK script + frames on the watch page
+                source: '/watch/:path*',
+                headers: [
+                    {
+                        key: 'X-Frame-Options',
+                        value: 'SAMEORIGIN',
+                    },
+                ],
+            },
+        ];
+    },
 };
 
 export default nextConfig;

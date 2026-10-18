@@ -32,13 +32,16 @@ export default function WatchVideo() {
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [seekFeedback, setSeekFeedback] = useState(null); // 'forward' | 'backward' | null
+  const [displayTime, setDisplayTime] = useState(0);     // seconds, for UI
+  const [displayDuration, setDisplayDuration] = useState(0);     // seconds, for UI
 
   // ── refs ───────────────────────────────────────────────────────────────────
   const iframeRef = useRef(null);
   const wrapperRef = useRef(null);   // the outer div we fullscreen
   const currentTime = useRef(0);      // tracked via DM postMessage events
-  const duration = useRef(Infinity);
+  const duration = useRef(0);
   const fbTimer = useRef(null);
+  const throttleRef = useRef(null);  // throttle timer for state updates
 
   // ── restore volume from localStorage ──────────────────────────────────────
   useEffect(() => {
@@ -79,8 +82,20 @@ export default function WatchVideo() {
       if (!e.origin.includes('dailymotion')) return;
       try {
         const d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-        if (typeof d?.time === 'number') currentTime.current = d.time;
-        if (typeof d?.duration === 'number') duration.current = d.duration;
+        if (typeof d?.time === 'number') {
+          currentTime.current = d.time;
+          // throttle state update to ~500ms to avoid excessive re-renders
+          if (!throttleRef.current) {
+            throttleRef.current = setTimeout(() => {
+              setDisplayTime(currentTime.current);
+              throttleRef.current = null;
+            }, 500);
+          }
+        }
+        if (typeof d?.duration === 'number' && d.duration > 0) {
+          duration.current = d.duration;
+          setDisplayDuration(d.duration);
+        }
       } catch { }
     };
     window.addEventListener('message', onMessage);
@@ -95,6 +110,16 @@ export default function WatchVideo() {
     document.addEventListener('fullscreenchange', onFsChange);
     return () => document.removeEventListener('fullscreenchange', onFsChange);
   }, []);
+
+  // ── helper: format seconds → m:ss ─────────────────────────────────────────────
+  const formatTime = (secs) => {
+    if (!secs || isNaN(secs) || secs < 0) return '0:00';
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = Math.floor(secs % 60);
+    if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    return `${m}:${String(s).padStart(2, '0')}`;
+  };
 
   // ── helper: send postMessage command to DM iframe ─────────────────────────
   const dmCommand = useCallback((command, parameters = []) => {
@@ -146,6 +171,17 @@ export default function WatchVideo() {
       showFeedback('forward');
     }
   }, [dmCommand, showFeedback]);
+
+  // ── click on progress bar to seek ────────────────────────────────────────────
+  const handleProgressClick = useCallback((e) => {
+    if (!duration.current) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const target = ratio * duration.current;
+    dmCommand('seek', [target]);
+    setDisplayTime(target);
+    currentTime.current = target;
+  }, [dmCommand]);
 
   // ── fullscreen (native browser API on wrapper div) ─────────────────────────
   const handleFullscreenToggle = useCallback(() => {
@@ -261,77 +297,121 @@ export default function WatchVideo() {
                 </div>
 
                 {/* ── Controls Bar – always visible inside the fullscreen container ── */}
-                <div className="px-4 py-3 bg-black/85 backdrop-blur-xl border-t border-white/5
-                              flex items-center gap-3 flex-wrap fs-controls-bar">
+                <div className="px-4 py-2 pb-3 bg-black/85 backdrop-blur-xl border-t border-white/5
+                                flex flex-col gap-2 fs-controls-bar">
 
-                  {/* ⏪ Seek Backward */}
-                  <button
-                    onClick={handleSeekBackward}
-                    title="رجوع 10 ثوانٍ  (←)"
-                    className="ctrl-btn"
-                  >
-                    <SkipBack size={18} />
-                    <span className="ctrl-lbl">10ث</span>
-                  </button>
+                  {/* ── Progress bar row ── */}
+                  <div className="flex items-center gap-3 w-full">
+                    {/* elapsed time */}
+                    <span className="text-[11px] font-black tabular-nums select-none
+                                    text-gold/80 shrink-0 min-w-[36px] text-right">
+                      {formatTime(displayTime)}
+                    </span>
 
-                  {/* ⏩ Seek Forward */}
-                  <button
-                    onClick={handleSeekForward}
-                    title="تقديم 10 ثوانٍ  (→)"
-                    className="ctrl-btn"
-                  >
-                    <span className="ctrl-lbl">10ث</span>
-                    <SkipForward size={18} />
-                  </button>
+                    {/* clickable track */}
+                    <div
+                      className="progress-track"
+                      onClick={handleProgressClick}
+                      title="انقر للتخطي إلى هذا الموقع"
+                    >
+                      {/* filled portion */}
+                      <div
+                        className="progress-fill"
+                        style={{
+                          width: displayDuration > 0
+                            ? `${Math.min(100, (displayTime / displayDuration) * 100)}%`
+                            : '0%'
+                        }}
+                      />
+                      {/* thumb dot */}
+                      <div
+                        className="progress-thumb"
+                        style={{
+                          left: displayDuration > 0
+                            ? `${Math.min(100, (displayTime / displayDuration) * 100)}%`
+                            : '0%'
+                        }}
+                      />
+                    </div>
 
-                  {/* divider */}
-                  <div className="w-px h-6 bg-white/10 mx-1" />
-
-                  {/* 🔇 Mute toggle */}
-                  <button
-                    onClick={handleMuteToggle}
-                    title={isMuted ? 'تشغيل الصوت (M)' : 'كتم الصوت (M)'}
-                    className="ctrl-btn"
-                  >
-                    <VolumeIcon size={18} />
-                  </button>
-
-                  {/* Volume slider */}
-                  <div className="flex items-center gap-2 min-w-[90px] max-w-[170px] flex-1">
-                    <input
-                      type="range"
-                      min="0" max="1" step="0.05"
-                      value={isMuted ? 0 : volume}
-                      onChange={e => handleVolumeChange(e.target.value)}
-                      className="vol-slider"
-                      title={`مستوى الصوت: ${Math.round((isMuted ? 0 : volume) * 100)}%`}
-                    />
-                    <span className="text-[10px] font-black text-text-dim w-8 text-center tabular-nums select-none">
-                      {Math.round((isMuted ? 0 : volume) * 100)}%
+                    {/* total duration */}
+                    <span className="text-[11px] font-black tabular-nums select-none
+                                    text-white/30 shrink-0 min-w-[36px]">
+                      {formatTime(displayDuration)}
                     </span>
                   </div>
 
-                  {/* spacer */}
-                  <div className="flex-1" />
+                  {/* ── Buttons row ── */}
+                  <div className="flex items-center gap-3 flex-wrap">
 
-                  {/* keyboard hints – desktop only */}
-                  <div className="hidden md:flex items-center gap-1 text-[9px] text-white/20 font-bold select-none">
-                    <kbd className="dm-kbd">←→</kbd> تقديم
-                    <kbd className="dm-kbd mx-1">M</kbd> صوت
-                    <kbd className="dm-kbd">F</kbd> شاشة
+                    <button
+                      onClick={handleSeekBackward}
+                      title="رجوع 10 ثوانٍ  (←)"
+                      className="ctrl-btn"
+                    >
+                      <SkipBack size={18} />
+                      <span className="ctrl-lbl">10ث</span>
+                    </button>
+
+                    {/* ⏩ Seek Forward */}
+                    <button
+                      onClick={handleSeekForward}
+                      title="تقديم 10 ثوانٍ  (→)"
+                      className="ctrl-btn"
+                    >
+                      <span className="ctrl-lbl">10ث</span>
+                      <SkipForward size={18} />
+                    </button>
+
+                    {/* divider */}
+                    <div className="w-px h-6 bg-white/10 mx-1" />
+
+                    {/* 🔇 Mute toggle */}
+                    <button
+                      onClick={handleMuteToggle}
+                      title={isMuted ? 'تشغيل الصوت (M)' : 'كتم الصوت (M)'}
+                      className="ctrl-btn"
+                    >
+                      <VolumeIcon size={18} />
+                    </button>
+
+                    {/* Volume slider */}
+                    <div className="flex items-center gap-2 min-w-[90px] max-w-[170px] flex-1">
+                      <input
+                        type="range"
+                        min="0" max="1" step="0.05"
+                        value={isMuted ? 0 : volume}
+                        onChange={e => handleVolumeChange(e.target.value)}
+                        className="vol-slider"
+                        title={`مستوى الصوت: ${Math.round((isMuted ? 0 : volume) * 100)}%`}
+                      />
+                      <span className="text-[10px] font-black text-text-dim w-8 text-center tabular-nums select-none">
+                        {Math.round((isMuted ? 0 : volume) * 100)}%
+                      </span>
+                    </div>
+
+                    {/* spacer */}
+                    <div className="flex-1" />
+
+                    {/* keyboard hints – desktop only */}
+                    <div className="hidden md:flex items-center gap-1 text-[9px] text-white/20 font-bold select-none">
+                      <kbd className="dm-kbd">←→</kbd> تقديم
+                      <kbd className="dm-kbd mx-1">M</kbd> صوت
+                      <kbd className="dm-kbd">F</kbd> شاشة
+                    </div>
+
+                    {/* divider */}
+                    <div className="w-px h-6 bg-white/10 mx-1" />
+
+                    {/* ⛶ Fullscreen */}
+                    <button
+                      onClick={handleFullscreenToggle}
+                      title={isFullscreen ? 'خروج من ملء الشاشة (F)' : 'ملء الشاشة (F)'}
+                      className="ctrl-btn"
+                    >
+                      {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+                    </button>
                   </div>
-
-                  {/* divider */}
-                  <div className="w-px h-6 bg-white/10 mx-1" />
-
-                  {/* ⛶ Fullscreen */}
-                  <button
-                    onClick={handleFullscreenToggle}
-                    title={isFullscreen ? 'خروج من ملء الشاشة (F)' : 'ملء الشاشة (F)'}
-                    className="ctrl-btn"
-                  >
-                    {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
-                  </button>
                 </div>
               </motion.div>
             </div>
@@ -514,6 +594,42 @@ export default function WatchVideo() {
           background: rgba(255,255,255,0.04);
           font-family: monospace; font-size: 9px;
         }
+
+        /* ── Progress / seek bar ─────────────────────────── */
+        :global(.progress-track) {
+          position: relative;
+          flex: 1;
+          height: 5px;
+          background: rgba(255,255,255,0.10);
+          border-radius: 99px;
+          cursor: pointer;
+          overflow: visible;
+          transition: height .15s;
+        }
+        :global(.progress-track:hover) { height: 7px; }
+
+        :global(.progress-fill) {
+          position: absolute;
+          top: 0; left: 0; bottom: 0;
+          border-radius: 99px;
+          background: linear-gradient(90deg, #c9a050, #ecd08a);
+          pointer-events: none;
+          transition: width .3s linear;
+        }
+
+        :global(.progress-thumb) {
+          position: absolute;
+          top: 50%;
+          transform: translate(-50%, -50%);
+          width: 13px; height: 13px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #c9a050, #ecd08a);
+          box-shadow: 0 0 8px rgba(201,160,80,0.7);
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity .15s, left .3s linear;
+        }
+        :global(.progress-track:hover .progress-thumb) { opacity: 1; }
       `}</style>
     </div>
   );

@@ -60,6 +60,26 @@ export default function WatchVideo() {
         const vRes = await api.get('/student/videos');
         const v = vRes.data.find(item => item._id === id);
         setVideo(v);
+        // ── seed duration from admin-set value if available ──
+        if (v?.durationSeconds > 0) {
+          duration.current = v.durationSeconds;
+          setDisplayDuration(v.durationSeconds);
+        }
+        // ── fetch real duration from Dailymotion API directly ──
+        if (v?.dailymotionId) {
+          const dmId = extractDailymotionId(v.dailymotionId);
+          if (dmId) {
+            fetch(`https://api.dailymotion.com/video/${dmId}?fields=duration`)
+              .then(r => r.json())
+              .then(dmData => {
+                if (dmData?.duration > 0) {
+                  duration.current = dmData.duration;
+                  setDisplayDuration(dmData.duration);
+                }
+              })
+              .catch(() => {});
+          }
+        }
         if (v) {
           try {
             await api.post('/student/activity/log', {
@@ -79,22 +99,64 @@ export default function WatchVideo() {
   // ── listen to postMessage events FROM the Dailymotion iframe ──────────────
   useEffect(() => {
     const onMessage = (e) => {
-      if (!e.origin.includes('dailymotion')) return;
       try {
-        const d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-        if (typeof d?.time === 'number') {
-          currentTime.current = d.time;
-          // throttle state update to ~500ms to avoid excessive re-renders
-          if (!throttleRef.current) {
-            throttleRef.current = setTimeout(() => {
-              setDisplayTime(currentTime.current);
-              throttleRef.current = null;
-            }, 500);
+        let d = e.data;
+        if (typeof d === 'string') {
+          try {
+            d = JSON.parse(d);
+          } catch {
+            try {
+              const q = new URLSearchParams(d);
+              d = Object.fromEntries(q.entries());
+            } catch { }
           }
         }
-        if (typeof d?.duration === 'number' && d.duration > 0) {
-          duration.current = d.duration;
-          setDisplayDuration(d.duration);
+        if (!d || typeof d !== 'object') return;
+
+        // Extract time
+        const rawTime =
+          d.time ??
+          d.videoTime ??
+          d.currentTime ??
+          d.playerCurrentTime ??
+          d.playerTime ??
+          d.video_time ??
+          d.state?.videoTime ??
+          d.state?.time ??
+          d.state?.playerCurrentTime ??
+          (d.event === 'timeupdate' && typeof d.value === 'number' ? d.value : null) ??
+          (d.event === 'timeupdate' && Array.isArray(d.parameters) ? d.parameters[0] : null);
+
+        if (rawTime !== undefined && rawTime !== null) {
+          const t = parseFloat(rawTime);
+          if (!isNaN(t) && t >= 0) {
+            currentTime.current = t;
+            if (!throttleRef.current) {
+              throttleRef.current = setTimeout(() => {
+                setDisplayTime(currentTime.current);
+                throttleRef.current = null;
+              }, 400);
+            }
+          }
+        }
+
+        // Extract duration
+        const rawDur =
+          d.duration ??
+          d.videoDuration ??
+          d.playerDuration ??
+          d.video_duration ??
+          d.state?.videoDuration ??
+          d.state?.duration ??
+          (d.event === 'video_durationchange' && typeof d.value === 'number' ? d.value : null) ??
+          (d.event === 'video_durationchange' && Array.isArray(d.parameters) ? d.parameters[0] : null);
+
+        if (rawDur !== undefined && rawDur !== null) {
+          const dur = parseFloat(rawDur);
+          if (!isNaN(dur) && dur > 0) {
+            duration.current = dur;
+            setDisplayDuration(dur);
+          }
         }
       } catch { }
     };
@@ -123,13 +185,35 @@ export default function WatchVideo() {
 
   // ── helper: send postMessage command to DM iframe ─────────────────────────
   const dmCommand = useCallback((command, parameters = []) => {
-    try {
-      iframeRef.current?.contentWindow?.postMessage(
-        JSON.stringify({ command, parameters }),
-        DM_ORIGIN
-      );
-    } catch (e) {
-      console.warn('[DM postMessage]', command, e);
+    const targetWin = iframeRef.current?.contentWindow;
+    if (!targetWin) return;
+
+    const origins = ['*', DM_ORIGIN, 'https://www.dailymotion.com', 'https://geo.dailymotion.com'];
+
+    // Send standard formats
+    origins.forEach(origin => {
+      try { targetWin.postMessage(JSON.stringify({ command, parameters }), origin); } catch { }
+      try { targetWin.postMessage({ command, parameters }, origin); } catch { }
+    });
+
+    if (command === 'seek' && parameters.length > 0) {
+      const sec = parameters[0];
+      origins.forEach(origin => {
+        try { targetWin.postMessage(`seek=${sec}`, origin); } catch { }
+        try { targetWin.postMessage(`api=seek&value=${sec}`, origin); } catch { }
+        try { targetWin.postMessage(JSON.stringify({ event: 'command', command: 'seek', parameters: [sec] }), origin); } catch { }
+        try { targetWin.postMessage(JSON.stringify({ method: 'seek', args: [sec] }), origin); } catch { }
+        try { targetWin.postMessage(JSON.stringify({ event: 'seek', value: sec }), origin); } catch { }
+      });
+    }
+
+    if (command === 'setVolume' && parameters.length > 0) {
+      const vol = parameters[0];
+      origins.forEach(origin => {
+        try { targetWin.postMessage(`volume=${vol}`, origin); } catch { }
+        try { targetWin.postMessage(`api=volume&value=${vol}`, origin); } catch { }
+        try { targetWin.postMessage(JSON.stringify({ event: 'command', command: 'setVolume', parameters: [vol] }), origin); } catch { }
+      });
     }
   }, []);
 
@@ -155,32 +239,40 @@ export default function WatchVideo() {
   const showFeedback = useCallback((dir) => {
     setSeekFeedback(dir);
     clearTimeout(fbTimer.current);
-    fbTimer.current = setTimeout(() => setSeekFeedback(null), 700);
+    fbTimer.current = setTimeout(() => setSeekFeedback(null), 800);
   }, []);
 
   const handleSeekBackward = useCallback(() => {
-    const target = Math.max(0, currentTime.current - 10);
+    const cur = currentTime.current;
+    const target = Math.max(0, cur - 10);
+    currentTime.current = target;
+    setDisplayTime(target);
     dmCommand('seek', [target]);
     showFeedback('backward');
   }, [dmCommand, showFeedback]);
 
   const handleSeekForward = useCallback(() => {
-    const target = currentTime.current + 10;
-    if (target < duration.current) {
-      dmCommand('seek', [target]);
-      showFeedback('forward');
+    const cur = currentTime.current;
+    const dur = duration.current;
+    let target = cur + 10;
+    if (dur > 0 && target > dur) {
+      target = dur;
     }
+    currentTime.current = target;
+    setDisplayTime(target);
+    dmCommand('seek', [target]);
+    showFeedback('forward');
   }, [dmCommand, showFeedback]);
 
   // ── click on progress bar to seek ────────────────────────────────────────────
   const handleProgressClick = useCallback((e) => {
-    if (!duration.current) return;
+    if (!duration.current || duration.current <= 0) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const target = ratio * duration.current;
-    dmCommand('seek', [target]);
-    setDisplayTime(target);
+    const target = Math.round(ratio * duration.current);
     currentTime.current = target;
+    setDisplayTime(target);
+    dmCommand('seek', [target]);
   }, [dmCommand]);
 
   // ── fullscreen (native browser API on wrapper div) ─────────────────────────
@@ -427,9 +519,11 @@ export default function WatchVideo() {
                 <span className="px-6 py-1.5 bg-white/5 text-text-dim border border-white/5 rounded-full text-[10px] font-black uppercase tracking-[2px]">
                   المحاضرة رقم 4
                 </span>
-                <span className="px-6 py-1.5 bg-white/5 text-text-dim border border-white/5 rounded-full text-[10px] font-black uppercase tracking-[2px] flex items-center gap-2">
-                  <Clock size={12} className="text-gold" /> 45:00 دقيقة
-                </span>
+                {video.durationSeconds > 0 && (
+                  <span className="px-6 py-1.5 bg-white/5 text-text-dim border border-white/5 rounded-full text-[10px] font-black uppercase tracking-[2px] flex items-center gap-2">
+                    <Clock size={12} className="text-gold" /> {formatTime(video.durationSeconds)} دقيقة
+                  </span>
+                )}
               </div>
 
               <h1 className="text-4xl md:text-5xl font-black mb-10 leading-snug">{video.title}</h1>

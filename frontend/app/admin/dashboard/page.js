@@ -118,7 +118,7 @@ export default function AdminDashboard() {
 
     const resetNewData = (tab) => {
         if (tab === 'students') setNewData({ grade: 1, name: '' });
-        else if (tab === 'videos') setNewData({ grade: 1, title: '', dailymotionId: '', unit: '', lesson: '', isGlobal: false });
+        else if (tab === 'videos') setNewData({ grade: 1, title: '', dailymotionId: '', durationSeconds: 0, unit: '', lesson: '', isGlobal: false });
         else if (tab === 'exams') setNewData({ grade: 1, title: '', duration: 30, attemptsAllowed: 1, isGlobal: false });
         else if (tab === 'free-videos') setNewData({ title: '', youtubeId: '', description: '' });
         else setNewData({ grade: 1 });
@@ -802,6 +802,36 @@ export default function AdminDashboard() {
                                         <>
                                             <input type="text" value={newData.title || ''} placeholder="عنوان المحاضرة" onChange={e => setNewData({ ...newData, title: e.target.value })} className="w-full bg-white/5 border border-white/5 p-4 rounded-xl focus:outline-none focus:border-gold/30 font-bold" required />
                                             <input type="text" value={newData.dailymotionId || ''} placeholder="رابط أو معرف Dailymotion Video (مثال: https://dai.ly/k1c0grIPFvdn2gEAng4)" onChange={e => setNewData({ ...newData, dailymotionId: e.target.value })} className="w-full bg-white/5 border border-white/5 p-4 rounded-xl focus:outline-none focus:border-gold/30 font-bold" required />
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase pr-2 flex items-center gap-2">
+                                                    <span>⏱ مدة الفيديو</span>
+                                                    <span className="text-gray-700 normal-case font-normal">(د:ث — مثال: 45:30)</span>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={(() => {
+                                                        const s = newData.durationSeconds || 0;
+                                                        const m = Math.floor(s / 60);
+                                                        const sec = s % 60;
+                                                        return s > 0 ? `${m}:${String(sec).padStart(2, '0')}` : '';
+                                                    })()}
+                                                    placeholder="45:30  (دقائق:ثوانٍ)"
+                                                    onChange={e => {
+                                                        const val = e.target.value.trim();
+                                                        const parts = val.split(':');
+                                                        if (parts.length === 2) {
+                                                            const mins = parseInt(parts[0]) || 0;
+                                                            const secs = parseInt(parts[1]) || 0;
+                                                            setNewData({ ...newData, durationSeconds: mins * 60 + secs });
+                                                        } else if (parts.length === 1 && val !== '') {
+                                                            setNewData({ ...newData, durationSeconds: parseInt(val) * 60 || 0 });
+                                                        } else {
+                                                            setNewData({ ...newData, durationSeconds: 0 });
+                                                        }
+                                                    }}
+                                                    className="w-full bg-white/5 border border-white/5 p-4 rounded-xl focus:outline-none focus:border-gold/30 font-bold tabular-nums"
+                                                />
+                                            </div>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <input type="text" value={newData.unit || ''} placeholder="الوحدة" onChange={e => setNewData({ ...newData, unit: e.target.value })} className="w-full bg-white/5 border border-white/5 p-4 rounded-xl focus:outline-none focus:border-gold/30 font-bold" required />
                                                 <input type="text" value={newData.lesson || ''} placeholder="الدرس" onChange={e => setNewData({ ...newData, lesson: e.target.value })} className="w-full bg-white/5 border border-white/5 p-4 rounded-xl focus:outline-none focus:border-gold/30 font-bold" required />

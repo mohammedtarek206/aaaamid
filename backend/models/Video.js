@@ -6,6 +6,7 @@ const videoSchema = new mongoose.Schema({
     unit: { type: String, required: true },
     lesson: { type: String, required: true },
     dailymotionId: { type: String, required: true },
+    durationSeconds: { type: Number, default: 0 }, // admin-set duration shown to students
     track: { type: String, enum: ['عام', 'علمي', 'أدبي'], default: 'عام' },
     views: { type: Number, default: 0 },
     isGlobal: { type: Boolean, default: false } // If true, visible to all students in grade

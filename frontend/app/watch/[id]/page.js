@@ -9,16 +9,18 @@ import {
   Volume2, VolumeX, Maximize, Minimize, SkipBack, SkipForward,
   Volume1
 } from 'lucide-react';
-import { extractDailymotionId, getDailymotionEmbedUrl } from '@/lib/dailymotion';
+import { extractDailymotionId, getDailymotionPlayerId } from '@/lib/dailymotion';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Strategy:
-//   • Use plain <iframe> embed (same as before – works reliably).
-//   • Control seek / volume via postMessage (Dailymotion documented API).
-//   • Fullscreen via native browser requestFullscreen() on the wrapper div.
-//   • Volume persisted to localStorage.
+// Official Dailymotion Player Web SDK integration:
+//   • Uses window.dailymotion.createPlayer() to get the live player instance.
+//   • Controls real playback via player.seek(), player.setVolume(), player.setMute().
+//   • Tracks actual playback time and duration via official player events.
+//   • Fullscreen via native browser requestFullscreen() on wrapper card.
+//   • Persistent volume settings in localStorage.
 // ─────────────────────────────────────────────────────────────────────────────
 
+const DM_CONTAINER_ID = 'dm-video-player';
 const VOLUME_KEY = 'ameed_player_volume';
 const DM_ORIGIN = 'https://geo.dailymotion.com';
 
@@ -31,17 +33,17 @@ export default function WatchVideo() {
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [playerReady, setPlayerReady] = useState(false);
   const [seekFeedback, setSeekFeedback] = useState(null); // 'forward' | 'backward' | null
   const [displayTime, setDisplayTime] = useState(0);     // seconds, for UI
-  const [displayDuration, setDisplayDuration] = useState(0);     // seconds, for UI
+  const [displayDuration, setDisplayDuration] = useState(0); // seconds, for UI
 
   // ── refs ───────────────────────────────────────────────────────────────────
-  const iframeRef = useRef(null);
+  const playerRef = useRef(null);
   const wrapperRef = useRef(null);   // the outer div we fullscreen
-  const currentTime = useRef(0);      // tracked via DM postMessage events
+  const currentTime = useRef(0);
   const duration = useRef(0);
   const fbTimer = useRef(null);
-  const throttleRef = useRef(null);  // throttle timer for state updates
 
   // ── restore volume from localStorage ──────────────────────────────────────
   useEffect(() => {
@@ -60,12 +62,14 @@ export default function WatchVideo() {
         const vRes = await api.get('/student/videos');
         const v = vRes.data.find(item => item._id === id);
         setVideo(v);
-        // ── seed duration from admin-set value if available ──
+
+        // Seed duration from admin data if set
         if (v?.durationSeconds > 0) {
           duration.current = v.durationSeconds;
           setDisplayDuration(v.durationSeconds);
         }
-        // ── fetch real duration from Dailymotion API directly ──
+
+        // Fetch real duration directly from Dailymotion API
         if (v?.dailymotionId) {
           const dmId = extractDailymotionId(v.dailymotionId);
           if (dmId) {
@@ -80,6 +84,7 @@ export default function WatchVideo() {
               .catch(() => {});
           }
         }
+
         if (v) {
           try {
             await api.post('/student/activity/log', {
@@ -96,73 +101,129 @@ export default function WatchVideo() {
     fetchVideo();
   }, [id]);
 
-  // ── listen to postMessage events FROM the Dailymotion iframe ──────────────
+  // ── Initialize Official Dailymotion Player SDK ─────────────────────────────
   useEffect(() => {
-    const onMessage = (e) => {
-      try {
-        let d = e.data;
-        if (typeof d === 'string') {
+    if (!video?.dailymotionId) return;
+
+    const videoId = extractDailymotionId(video.dailymotionId);
+    if (!videoId) return;
+
+    let isMounted = true;
+    const playerId = getDailymotionPlayerId();
+    const sdkSrc = `https://geo.dailymotion.com/player/${playerId}.js`;
+
+    const initPlayer = () => {
+      if (!isMounted || !window.dailymotion?.createPlayer) return;
+
+      const container = document.getElementById(DM_CONTAINER_ID);
+      if (!container) return;
+
+      // Clean up previous instance
+      if (playerRef.current) {
+        try { playerRef.current.destroy?.(); } catch { }
+        playerRef.current = null;
+      }
+
+      container.innerHTML = '';
+      container.classList.remove('dailymotion-player-wrapper', 'dailymotion-player-root');
+
+      window.dailymotion
+        .createPlayer(DM_CONTAINER_ID, {
+          video: videoId,
+          player: playerId,
+          params: {
+            autoplay: true,
+            mute: false,
+          },
+        })
+        .then(player => {
+          if (!isMounted) {
+            try { player.destroy?.(); } catch { }
+            return;
+          }
+
+          playerRef.current = player;
+          setPlayerReady(true);
+
+          // Apply saved volume to real player
+          const savedVol = parseFloat(localStorage.getItem(VOLUME_KEY));
+          const initVol = !isNaN(savedVol) && savedVol >= 0 && savedVol <= 1 ? savedVol : volume;
           try {
-            d = JSON.parse(d);
-          } catch {
-            try {
-              const q = new URLSearchParams(d);
-              d = Object.fromEntries(q.entries());
-            } catch { }
-          }
-        }
-        if (!d || typeof d !== 'object') return;
-
-        // Extract time
-        const rawTime =
-          d.time ??
-          d.videoTime ??
-          d.currentTime ??
-          d.playerCurrentTime ??
-          d.playerTime ??
-          d.video_time ??
-          d.state?.videoTime ??
-          d.state?.time ??
-          d.state?.playerCurrentTime ??
-          (d.event === 'timeupdate' && typeof d.value === 'number' ? d.value : null) ??
-          (d.event === 'timeupdate' && Array.isArray(d.parameters) ? d.parameters[0] : null);
-
-        if (rawTime !== undefined && rawTime !== null) {
-          const t = parseFloat(rawTime);
-          if (!isNaN(t) && t >= 0) {
-            currentTime.current = t;
-            if (!throttleRef.current) {
-              throttleRef.current = setTimeout(() => {
-                setDisplayTime(currentTime.current);
-                throttleRef.current = null;
-              }, 400);
+            player.setVolume(initVol);
+            if (isMuted || initVol === 0) {
+              player.setMute(true);
+            } else {
+              player.setMute(false);
             }
-          }
-        }
+          } catch { }
 
-        // Extract duration
-        const rawDur =
-          d.duration ??
-          d.videoDuration ??
-          d.playerDuration ??
-          d.video_duration ??
-          d.state?.videoDuration ??
-          d.state?.duration ??
-          (d.event === 'video_durationchange' && typeof d.value === 'number' ? d.value : null) ??
-          (d.event === 'video_durationchange' && Array.isArray(d.parameters) ? d.parameters[0] : null);
+          // Register official event listeners on the player
+          try {
+            const ev = window.dailymotion.events;
 
-        if (rawDur !== undefined && rawDur !== null) {
-          const dur = parseFloat(rawDur);
-          if (!isNaN(dur) && dur > 0) {
-            duration.current = dur;
-            setDisplayDuration(dur);
+            // Real-time playback position update
+            player.on(ev.VIDEO_TIMECHANGE, state => {
+              const t = state?.playerCurrentTime ?? state?.videoTime ?? state?.currentTime;
+              if (typeof t === 'number' && !isNaN(t) && t >= 0) {
+                currentTime.current = t;
+                setDisplayTime(t);
+              }
+            });
+
+            // Video duration change
+            player.on(ev.VIDEO_DURATIONCHANGE, state => {
+              const dur = state?.videoDuration ?? state?.playerDuration ?? state?.duration;
+              if (typeof dur === 'number' && dur > 0) {
+                duration.current = dur;
+                setDisplayDuration(dur);
+              }
+            });
+
+            // Real player volume change
+            player.on(ev.PLAYER_VOLUMECHANGE, state => {
+              if (typeof state?.playerVolume === 'number') {
+                setVolume(state.playerVolume);
+              }
+              if (typeof state?.playerIsMuted === 'boolean') {
+                setIsMuted(state.playerIsMuted);
+              }
+            });
+
+            // Fullscreen presentation mode
+            player.on(ev.PLAYER_PRESENTATIONMODECHANGE, state => {
+              setIsFullscreen(state?.playerPresentationMode === 'fullscreen');
+            });
+          } catch (e) {
+            console.warn('[DM Player] Error attaching events:', e);
           }
-        }
-      } catch { }
+        })
+        .catch(err => {
+          console.error('[DM Player SDK] createPlayer failed:', err);
+        });
     };
-    window.addEventListener('message', onMessage);
-    return () => window.removeEventListener('message', onMessage);
-  }, []);
+
+    if (window.dailymotion?.createPlayer) {
+      initPlayer();
+    } else {
+      let script = document.getElementById('dm-player-sdk');
+      if (!script) {
+        script = document.createElement('script');
+        script.id = 'dm-player-sdk';
+        script.src = sdkSrc;
+        script.async = true;
+        document.head.appendChild(script);
+      }
+      script.addEventListener('load', initPlayer);
+    }
+
+    return () => {
+      isMounted = false;
+      if (playerRef.current) {
+        try { playerRef.current.destroy?.(); } catch { }
+        playerRef.current = null;
+      }
+    };
+  }, [video?.dailymotionId]);
 
   // ── listen to native fullscreen change ──────────────────────────────────
   useEffect(() => {
@@ -183,59 +244,51 @@ export default function WatchVideo() {
     return `${m}:${String(s).padStart(2, '0')}`;
   };
 
-  // ── helper: send postMessage command to DM iframe ─────────────────────────
-  const dmCommand = useCallback((command, parameters = []) => {
-    const targetWin = iframeRef.current?.contentWindow;
-    if (!targetWin) return;
-
-    const origins = ['*', DM_ORIGIN, 'https://www.dailymotion.com', 'https://geo.dailymotion.com'];
-
-    // Send standard formats
-    origins.forEach(origin => {
-      try { targetWin.postMessage(JSON.stringify({ command, parameters }), origin); } catch { }
-      try { targetWin.postMessage({ command, parameters }, origin); } catch { }
-    });
-
-    if (command === 'seek' && parameters.length > 0) {
-      const sec = parameters[0];
-      origins.forEach(origin => {
-        try { targetWin.postMessage(`seek=${sec}`, origin); } catch { }
-        try { targetWin.postMessage(`api=seek&value=${sec}`, origin); } catch { }
-        try { targetWin.postMessage(JSON.stringify({ event: 'command', command: 'seek', parameters: [sec] }), origin); } catch { }
-        try { targetWin.postMessage(JSON.stringify({ method: 'seek', args: [sec] }), origin); } catch { }
-        try { targetWin.postMessage(JSON.stringify({ event: 'seek', value: sec }), origin); } catch { }
-      });
-    }
-
-    if (command === 'setVolume' && parameters.length > 0) {
-      const vol = parameters[0];
-      origins.forEach(origin => {
-        try { targetWin.postMessage(`volume=${vol}`, origin); } catch { }
-        try { targetWin.postMessage(`api=volume&value=${vol}`, origin); } catch { }
-        try { targetWin.postMessage(JSON.stringify({ event: 'command', command: 'setVolume', parameters: [vol] }), origin); } catch { }
-      });
-    }
-  }, []);
-
-  // ── volume ─────────────────────────────────────────────────────────────────
+  // ── volume: controls the REAL player sound ─────────────────────────────────
   const handleVolumeChange = useCallback((newVal) => {
     const v = Math.max(0, Math.min(1, parseFloat(newVal)));
     setVolume(v);
-    setIsMuted(v === 0);
+    const muted = v === 0;
+    setIsMuted(muted);
     try { localStorage.setItem(VOLUME_KEY, String(v)); } catch { }
-    dmCommand('setVolume', [v]);
-  }, [dmCommand]);
+
+    if (playerRef.current) {
+      try {
+        playerRef.current.setVolume(v);
+        if (muted) {
+          playerRef.current.setMute(true);
+        } else {
+          playerRef.current.setMute(false);
+        }
+      } catch (e) {
+        console.warn('[DM Player] setVolume error:', e);
+      }
+    }
+  }, []);
 
   const handleMuteToggle = useCallback(() => {
     if (isMuted) {
       const restore = volume > 0 ? volume : 0.7;
-      handleVolumeChange(restore);
+      setVolume(restore);
+      setIsMuted(false);
+      try { localStorage.setItem(VOLUME_KEY, String(restore)); } catch { }
+      if (playerRef.current) {
+        try {
+          playerRef.current.setMute(false);
+          playerRef.current.setVolume(restore);
+        } catch { }
+      }
     } else {
-      handleVolumeChange(0);
+      setIsMuted(true);
+      if (playerRef.current) {
+        try {
+          playerRef.current.setMute(true);
+        } catch { }
+      }
     }
-  }, [isMuted, volume, handleVolumeChange]);
+  }, [isMuted, volume]);
 
-  // ── seek ───────────────────────────────────────────────────────────────────
+  // ── seek: controls REAL video playback position ────────────────────────────
   const showFeedback = useCallback((dir) => {
     setSeekFeedback(dir);
     clearTimeout(fbTimer.current);
@@ -243,28 +296,54 @@ export default function WatchVideo() {
   }, []);
 
   const handleSeekBackward = useCallback(() => {
-    const cur = currentTime.current;
-    const target = Math.max(0, cur - 10);
-    currentTime.current = target;
-    setDisplayTime(target);
-    dmCommand('seek', [target]);
-    showFeedback('backward');
-  }, [dmCommand, showFeedback]);
+    const doSeek = (cur) => {
+      const target = Math.max(0, cur - 10);
+      currentTime.current = target;
+      setDisplayTime(target);
+      if (playerRef.current?.seek) {
+        try { playerRef.current.seek(target); } catch { }
+      }
+      showFeedback('backward');
+    };
+
+    if (playerRef.current?.getState) {
+      playerRef.current.getState().then(state => {
+        const cur = state?.playerCurrentTime ?? state?.videoTime ?? currentTime.current;
+        doSeek(cur);
+      }).catch(() => {
+        doSeek(currentTime.current);
+      });
+    } else {
+      doSeek(currentTime.current);
+    }
+  }, [showFeedback]);
 
   const handleSeekForward = useCallback(() => {
-    const cur = currentTime.current;
-    const dur = duration.current;
-    let target = cur + 10;
-    if (dur > 0 && target > dur) {
-      target = dur;
-    }
-    currentTime.current = target;
-    setDisplayTime(target);
-    dmCommand('seek', [target]);
-    showFeedback('forward');
-  }, [dmCommand, showFeedback]);
+    const doSeek = (cur) => {
+      const dur = duration.current;
+      let target = cur + 10;
+      if (dur > 0 && target > dur) target = dur;
+      currentTime.current = target;
+      setDisplayTime(target);
+      if (playerRef.current?.seek) {
+        try { playerRef.current.seek(target); } catch { }
+      }
+      showFeedback('forward');
+    };
 
-  // ── click on progress bar to seek ────────────────────────────────────────────
+    if (playerRef.current?.getState) {
+      playerRef.current.getState().then(state => {
+        const cur = state?.playerCurrentTime ?? state?.videoTime ?? currentTime.current;
+        doSeek(cur);
+      }).catch(() => {
+        doSeek(currentTime.current);
+      });
+    } else {
+      doSeek(currentTime.current);
+    }
+  }, [showFeedback]);
+
+  // ── click on progress bar to seek real player ──────────────────────────────
   const handleProgressClick = useCallback((e) => {
     if (!duration.current || duration.current <= 0) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -272,18 +351,21 @@ export default function WatchVideo() {
     const target = Math.round(ratio * duration.current);
     currentTime.current = target;
     setDisplayTime(target);
-    dmCommand('seek', [target]);
-  }, [dmCommand]);
+    if (playerRef.current?.seek) {
+      try { playerRef.current.seek(target); } catch { }
+    }
+  }, []);
 
   // ── fullscreen (native browser API on wrapper div) ─────────────────────────
   const handleFullscreenToggle = useCallback(() => {
     if (!document.fullscreenElement) {
       wrapperRef.current?.requestFullscreen?.().catch(() => {
-        // fallback: try the iframe itself
-        iframeRef.current?.requestFullscreen?.();
+        playerRef.current?.setFullscreen?.(true);
       });
     } else {
-      document.exitFullscreen?.();
+      document.exitFullscreen?.().catch(() => {
+        playerRef.current?.setFullscreen?.(false);
+      });
     }
   }, []);
 
@@ -362,17 +444,16 @@ export default function WatchVideo() {
                   className="relative w-full bg-black fs-video-area"
                   style={{ paddingBottom: '56.25%' }}
                 >
-                  <div className="absolute inset-0">
-                    <iframe
-                      ref={iframeRef}
-                      src={getDailymotionEmbedUrl(video.dailymotionId, { autoplay: true })}
-                      allow="autoplay; fullscreen; picture-in-picture; web-share"
-                      allowFullScreen
-                      referrerPolicy="strict-origin-when-cross-origin"
-                      className="absolute inset-0 w-full h-full border-0"
-                      width="100%"
-                      height="100%"
+                  <div className="absolute inset-0 bg-black overflow-hidden">
+                    <div
+                      id={DM_CONTAINER_ID}
+                      className="w-full h-full"
                     />
+                    {!playerReady && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-10 pointer-events-none">
+                        <div className="w-12 h-12 border-4 border-gold/20 border-t-gold rounded-full animate-spin" />
+                      </div>
+                    )}
                   </div>
 
                   {/* Seek feedback overlay */}
@@ -638,6 +719,17 @@ export default function WatchVideo() {
           flex-shrink: 0 !important;
           background: rgba(0,0,0,0.92) !important;
           border-top: 1px solid rgba(201,160,80,0.2) !important;
+        }
+
+        /* ── Dailymotion Player Container ──────────────────── */
+        :global(#dm-video-player),
+        :global(#dm-video-player .dailymotion-player-root),
+        :global(#dm-video-player .dailymotion-player-wrapper),
+        :global(#dm-video-player iframe) {
+          width: 100% !important;
+          height: 100% !important;
+          border: 0 !important;
+          display: block !important;
         }
 
         /* ── Control buttons ───────────────────────────────── */

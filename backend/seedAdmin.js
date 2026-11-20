@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const { connectDB } = require('./db');
 const Admin = require('./models/Admin');
 const bcrypt = require('bcryptjs');
 const dotenv = require('dotenv');
@@ -7,7 +7,7 @@ dotenv.config();
 
 async function seedAdmin() {
     try {
-        await mongoose.connect(process.env.MONGODB_URI);
+        await connectDB();
         console.log('Connected to MongoDB');
 
         const existingAdmin = await Admin.findOne({ username: 'admin' });

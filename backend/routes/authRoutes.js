@@ -75,7 +75,14 @@ router.post('/login/student', async (req, res) => {
             { expiresIn: '7d' }
         );
 
-        res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+        const cookieOptions = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        };
+
+        res.cookie('token', token, cookieOptions);
         res.json({ token, student });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -125,7 +132,14 @@ const handleAdminLogin = async (req, res) => {
             { expiresIn: '7d' }
         );
 
-        res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+        const cookieOptions = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        };
+
+        res.cookie('token', token, cookieOptions);
         return res.json({ token, admin: { id: admin._id, username: admin.username, role: 'admin' } });
     } catch (err) {
         console.error('Admin Login Server Error:', err);

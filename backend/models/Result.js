@@ -13,4 +13,4 @@ const resultSchema = new mongoose.Schema({
     completedAt: { type: Date, default: Date.now }
 }, { timestamps: true });
 
-module.exports = mongoose.model('Result', resultSchema);
+module.exports = mongoose.models.Result || mongoose.model('Result', resultSchema);

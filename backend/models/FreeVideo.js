@@ -7,4 +7,4 @@ const freeVideoSchema = new mongoose.Schema({
     sourceType: { type: String, enum: ['youtube', 'dailymotion'], default: 'youtube' }
 }, { timestamps: true });
 
-module.exports = mongoose.model('FreeVideo', freeVideoSchema);
+module.exports = mongoose.models.FreeVideo || mongoose.model('FreeVideo', freeVideoSchema);

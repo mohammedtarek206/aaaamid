@@ -12,8 +12,10 @@ const AdminSchema = new mongoose.Schema({
 
 const Admin = mongoose.models.Admin || mongoose.model('Admin', AdminSchema);
 
+const { sanitizeMongoUri } = require('./db');
+
 async function test() {
-    console.log('Testing connection to:', process.env.MONGODB_URI);
+    console.log('Testing connection to:', sanitizeMongoUri(process.env.MONGODB_URI));
     try {
         await mongoose.connect(process.env.MONGODB_URI, {
             serverSelectionTimeoutMS: 5000

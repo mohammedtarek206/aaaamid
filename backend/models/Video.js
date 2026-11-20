@@ -14,4 +14,4 @@ const videoSchema = new mongoose.Schema({
 
 videoSchema.index({ grade: 1, track: 1 });
 
-module.exports = mongoose.model('Video', videoSchema);
+module.exports = mongoose.models.Video || mongoose.model('Video', videoSchema);

@@ -6,4 +6,4 @@ const adminSchema = new mongoose.Schema({
     role: { type: String, default: 'admin' }
 }, { timestamps: true });
 
-module.exports = mongoose.model('Admin', adminSchema);
+module.exports = mongoose.models.Admin || mongoose.model('Admin', adminSchema);

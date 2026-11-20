@@ -1,144 +1,142 @@
+const path = require('path');
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const cookieParser = require('cookie-parser');
 
+// Load environment variables from backend/.env and current working directory
+dotenv.config({ path: path.join(__dirname, '.env') });
 dotenv.config();
+
+const { connectDB } = require('./db');
 
 const app = express();
 
-// Middleware
-app.use(express.json());
-app.use(cookieParser());
+// 1. Normalize Vercel Serverless internal rewritten paths
+app.use((req, res, next) => {
+    if (req.url.startsWith('/api/index.js') || req.url.startsWith('/server.js')) {
+        const matchedPath = req.headers['x-matched-path'] || req.headers['x-now-route-matches'];
+        if (matchedPath) {
+            req.url = matchedPath;
+        }
+    }
+    next();
+});
 
-
-
-const allowedOrigins = [
+// 2. Comprehensive, safe CORS configuration
+const defaultAllowedOrigins = [
     'https://mrahmed-shendy.com',
     'https://www.mrahmed-shendy.com',
     'https://el-amid-platform.vercel.app',
-    'http://localhost:3000'
+    'https://el-amid.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:5173',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001'
 ];
 
-app.use(cors({
+// Add origins from environment variables if present
+const envOrigins = [
+    process.env.CLIENT_URL,
+    process.env.FRONTEND_URL,
+    ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [])
+]
+    .filter(Boolean)
+    .map(o => o.trim().replace(/\/+$/, ''));
+
+const allowedOriginsSet = new Set([...defaultAllowedOrigins, ...envOrigins]);
+
+const isAllowedOrigin = (origin) => {
+    // Allow non-browser requests (e.g. server-to-server, curl, Postman, mobile apps)
+    if (!origin) return true;
+
+    const normalized = origin.trim().replace(/\/+$/, '');
+    if (allowedOriginsSet.has(normalized)) return true;
+
+    // Safely allow all Vercel preview and production deployments (*.vercel.app)
+    if (/^https:\/\/[a-zA-Z0-9_-]+\.vercel\.app$/.test(normalized)) {
+        return true;
+    }
+
+    return false;
+};
+
+const corsOptions = {
     origin: (origin, callback) => {
-        // Allow requests with no origin (e.g., curl, Postman, server-to-server)
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.includes(origin)) return callback(null, true);
-        return callback(new Error(`CORS blocked for origin: ${origin}`), false);
+        if (isAllowedOrigin(origin)) {
+            return callback(null, true);
+        }
+        console.warn(`⚠️ [CORS Blocked] Unauthorized origin: ${origin}`);
+        // Return null, false to reject CORS cleanly without throwing a 500 error
+        return callback(null, false);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-device-id']
-}));
-
-const PORT = process.env.PORT || 5000;
-
-// Connect to MongoDB with optimized production settings
-const mongooseOptions = {
-    // Robust settings for VPS/Serverless
-    serverSelectionTimeoutMS: 10000, // Wait up to 10s for server selection
-    socketTimeoutMS: 45000,         // Close sockets after 45s of inactivity
-    family: 4                       // Skip trying IPv6
+    allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'x-device-id',
+        'Accept',
+        'Origin',
+        'X-Requested-With'
+    ],
+    exposedHeaders: ['set-cookie'],
+    optionsSuccessStatus: 200,
+    maxAge: 86400 // Cache preflight for 24 hours
 };
 
-// Mongoose settings
-mongoose.set('bufferCommands', true); // Re-enable buffering but we will handle it better
+// Mount CORS and explicitly handle preflight requests
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
-const Admin = require('./models/Admin');
-const bcrypt = require('bcryptjs');
+// 3. Body and cookie parsing middlewares
+app.use(express.json());
+app.use(cookieParser());
 
-let dbConnectionPromise = null;
-
-const connectDB = async () => {
-    if (mongoose.connection.readyState >= 1) return;
-
-    if (!dbConnectionPromise) {
-        dbConnectionPromise = (async () => {
-            try {
-                const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/el-amid';
-                if (!process.env.MONGODB_URI) {
-                    console.warn('⚠️ MONGODB_URI environment variable is not defined!');
-                }
-                console.log('⏳ Connecting to MongoDB...');
-                await mongoose.connect(mongoUri, mongooseOptions);
-                console.log('✅ Connected to MongoDB');
-
-                // Initial Admin Setup & Sync
-                try {
-                    let existingAdmin = await Admin.findOne({ username: 'admin' });
-                    const hashedPassword = await bcrypt.hash('admin123', 10);
-                    if (!existingAdmin) {
-                        await new Admin({ username: 'admin', password: hashedPassword }).save();
-                        console.log('🚀 Admin account created: admin / admin123');
-                    } else {
-                        existingAdmin.password = hashedPassword;
-                        await existingAdmin.save();
-                        console.log('✅ Admin account password synced: admin / admin123');
-                    }
-                } catch (adminErr) {
-                    console.error('⚠️ Admin check error:', adminErr.message);
-                }
-            } catch (err) {
-                console.error('❌ MongoDB Connection Error:', err.message);
-                dbConnectionPromise = null;
-                throw err;
-            }
-        })();
-    }
-    return dbConnectionPromise;
-};
-
-// Initial connection attempt
-connectDB().catch(err => console.error('Initial DB connect attempt failed:', err.message));
-
-// Middleware to ensure DB connection for serverless function invocations
+// 4. Database connection middleware for requests
 app.use(async (req, res, next) => {
+    // OPTIONS preflight requests and health checks do not require database access
+    if (req.method === 'OPTIONS' || req.path === '/api/health' || req.path === '/health') {
+        return next();
+    }
+
     try {
-        if (mongoose.connection.readyState !== 1) {
-            await connectDB();
-        }
+        await connectDB();
         next();
     } catch (err) {
-        console.error('🔥 DB Connection Error:', err);
-        res.status(500).json({ error: 'Database connection failed', message: err.message });
+        console.error(`🔥 Database unavailable for ${req.method} ${req.originalUrl || req.url}:`, err.message);
+        return res.status(503).json({
+            error: 'Database connection failed',
+            message: 'Unable to connect to database cluster. Please try again in a few moments.'
+        });
     }
 });
 
-// Start local HTTP server if running outside Vercel
-if (!process.env.VERCEL && process.env.NODE_ENV !== 'production') {
-    app.listen(PORT, () => {
-        console.log(`🚀 Server is running on http://localhost:${PORT}`);
-        console.log(`📡 API Base URL: http://localhost:${PORT}/api`);
+// Non-blocking initial connection attempt for local/standalone servers
+if (!process.env.VERCEL) {
+    connectDB().catch((err) => {
+        console.error('Initial DB connect attempt failed:', err.message);
     });
 }
 
-// Monitor connection status
-mongoose.connection.on('disconnected', () => {
-    console.warn('⚠️ MongoDB disconnected!');
-});
-
-mongoose.connection.on('error', (err) => {
-    console.error('❌ MongoDB runtime error:', err);
-});
-
-// Routes
+// 5. Mount API Routes (supporting both /api/* and /* prefixes to prevent rewrite/proxy mismatches)
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const publicRoutes = require('./routes/publicRoutes');
 
-app.use('/api/auth', authRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/student', studentRoutes);
-app.use('/api/public', publicRoutes);
+app.use(['/api/auth', '/auth'], authRoutes);
+app.use(['/api/admin', '/admin'], adminRoutes);
+app.use(['/api/student', '/student'], studentRoutes);
+app.use(['/api/public', '/public'], publicRoutes);
 
-// Health Check Endpoint for Monitoring
+// 6. Monitoring & Health Check
 app.get(['/api/health', '/health'], (req, res) => {
     res.json({
         status: 'UP',
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
         database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'
     });
 });
@@ -147,27 +145,43 @@ app.get(['/', '/server.js'], (req, res) => {
     res.send('El-Amid Platform API is running smoothly...');
 });
 
-// Global Error Handler Middleware
+// 7. 404 Handler
+app.use((req, res) => {
+    res.status(404).json({ error: 'Endpoint not found', path: req.originalUrl || req.url });
+});
+
+// 8. Global Error Handler Middleware
 app.use((err, req, res, next) => {
-    console.error('🔥 GLOBAL ERROR:', err.stack);
+    console.error('🔥 GLOBAL ERROR:', err.stack || err.message);
     res.status(err.status || 500).json({
         error: process.env.NODE_ENV === 'production'
             ? 'Internal Server Error'
-            : err.message
+            : (err.message || 'Unknown Server Error')
     });
 });
 
-// Handle Uncaught Exceptions to prevent server from dying silently
+// 9. Process Safety: Never exit process in serverless environments
 process.on('uncaughtException', (err) => {
-    console.error('💥 UNCAUGHT EXCEPTION! Shutting down...');
-    console.error(err.name, err.message);
-    process.exit(1);
+    console.error('💥 UNCAUGHT EXCEPTION:', err.name, err.message);
+    if (!process.env.VERCEL) {
+        process.exit(1);
+    }
 });
 
-process.on('unhandledRejection', (err) => {
-    console.error('💥 UNHANDLED REJECTION! Shutting down...');
-    console.error(err.name, err.message);
-    process.exit(1);
+process.on('unhandledRejection', (reason) => {
+    console.error('💥 UNHANDLED REJECTION:', reason);
+    if (!process.env.VERCEL) {
+        process.exit(1);
+    }
 });
+
+// 10. Start local HTTP server outside Vercel
+const PORT = process.env.PORT || 5000;
+if (!process.env.VERCEL && require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`🚀 Server is running on http://localhost:${PORT}`);
+        console.log(`📡 API Base URL: http://localhost:${PORT}/api`);
+    });
+}
 
 module.exports = app;

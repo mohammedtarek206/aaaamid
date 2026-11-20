@@ -14,4 +14,4 @@ const examSchema = new mongoose.Schema({
 
 examSchema.index({ grade: 1, isActive: 1, track: 1 });
 
-module.exports = mongoose.model('Exam', examSchema);
+module.exports = mongoose.models.Exam || mongoose.model('Exam', examSchema);

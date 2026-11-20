@@ -23,4 +23,4 @@ const studentSchema = new mongoose.Schema({
     accessibleExams: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Exam' }]
 }, { timestamps: true });
 
-module.exports = mongoose.model('Student', studentSchema);
+module.exports = mongoose.models.Student || mongoose.model('Student', studentSchema);

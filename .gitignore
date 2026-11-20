@@ -21,3 +21,5 @@ out/
 *.log
 .gemini/
 .env.bak
+.vercel
+.env*

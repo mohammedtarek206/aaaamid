@@ -24,12 +24,13 @@ app.use((req, res, next) => {
     next();
 });
 
-// 2. Comprehensive, safe CORS configuration
+// 2. Allowed origins list (explicitly allowing production frontend domains)
 const defaultAllowedOrigins = [
-    'https://mrahmed-shendy.com',
     'https://www.mrahmed-shendy.com',
+    'https://mrahmed-shendy.com',
     'https://el-amid-platform.vercel.app',
     'https://el-amid.vercel.app',
+    'https://elamid.vercel.app',
     'http://localhost:3000',
     'http://localhost:3001',
     'http://localhost:5173',
@@ -48,14 +49,14 @@ const envOrigins = [
 
 const allowedOriginsSet = new Set([...defaultAllowedOrigins, ...envOrigins]);
 
-const isAllowedOrigin = (origin) => {
+const isOriginAllowed = (origin) => {
     // Allow non-browser requests (e.g. server-to-server, curl, Postman, mobile apps)
     if (!origin) return true;
 
     const normalized = origin.trim().replace(/\/+$/, '');
     if (allowedOriginsSet.has(normalized)) return true;
 
-    // Safely allow all Vercel preview and production deployments (*.vercel.app)
+    // Safely allow all Vercel preview and deployment URLs (*.vercel.app)
     if (/^https:\/\/[a-zA-Z0-9_-]+\.vercel\.app$/.test(normalized)) {
         return true;
     }
@@ -63,17 +64,46 @@ const isAllowedOrigin = (origin) => {
     return false;
 };
 
+// 3. FIRST-PRIORITY CORS & PREFLIGHT OPTIONS HANDLER
+// Registered BEFORE body parsing, database middleware, auth, and routes
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+
+    if (isOriginAllowed(origin)) {
+        if (origin) {
+            res.setHeader('Access-Control-Allow-Origin', origin);
+            res.setHeader('Access-Control-Allow-Credentials', 'true');
+        }
+    } else if (origin) {
+        console.warn(`⚠️ [CORS Blocked] Unauthorized origin: ${origin} on ${req.method} ${req.url}`);
+        if (req.method === 'OPTIONS') {
+            return res.status(403).end();
+        }
+    }
+
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-device-id, Accept, Origin, X-Requested-With');
+    res.setHeader('Access-Control-Expose-Headers', 'set-cookie');
+    res.setHeader('Access-Control-Max-Age', '86400');
+
+    // Return HTTP 204 immediately for preflight OPTIONS requests without touching DB
+    if (req.method === 'OPTIONS') {
+        return res.status(204).end();
+    }
+
+    next();
+});
+
+// Also register standard cors middleware for full Express compatibility
 const corsOptions = {
     origin: (origin, callback) => {
-        if (isAllowedOrigin(origin)) {
+        if (isOriginAllowed(origin)) {
             return callback(null, true);
         }
-        console.warn(`⚠️ [CORS Blocked] Unauthorized origin: ${origin}`);
-        // Return null, false to reject CORS cleanly without throwing a 500 error
         return callback(null, false);
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
         'Content-Type',
         'Authorization',
@@ -83,21 +113,19 @@ const corsOptions = {
         'X-Requested-With'
     ],
     exposedHeaders: ['set-cookie'],
-    optionsSuccessStatus: 200,
-    maxAge: 86400 // Cache preflight for 24 hours
+    optionsSuccessStatus: 204,
+    maxAge: 86400
 };
-
-// Mount CORS and explicitly handle preflight requests
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
-// 3. Body and cookie parsing middlewares
+// 4. Body and cookie parsing middlewares
 app.use(express.json());
 app.use(cookieParser());
 
-// 4. Database connection middleware for requests
+// 5. Database connection middleware for actual API requests
 app.use(async (req, res, next) => {
-    // OPTIONS preflight requests and health checks do not require database access
+    // OPTIONS preflight requests and health checks do NOT touch the database
     if (req.method === 'OPTIONS' || req.path === '/api/health' || req.path === '/health') {
         return next();
     }
@@ -121,7 +149,7 @@ if (!process.env.VERCEL) {
     });
 }
 
-// 5. Mount API Routes (supporting both /api/* and /* prefixes to prevent rewrite/proxy mismatches)
+// 6. Mount API Routes (supporting both /api/* and /* prefixes to prevent rewrite/proxy mismatches)
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const studentRoutes = require('./routes/studentRoutes');
@@ -132,7 +160,7 @@ app.use(['/api/admin', '/admin'], adminRoutes);
 app.use(['/api/student', '/student'], studentRoutes);
 app.use(['/api/public', '/public'], publicRoutes);
 
-// 6. Monitoring & Health Check
+// 7. Monitoring & Health Check
 app.get(['/api/health', '/health'], (req, res) => {
     res.json({
         status: 'UP',
@@ -145,12 +173,12 @@ app.get(['/', '/server.js'], (req, res) => {
     res.send('El-Amid Platform API is running smoothly...');
 });
 
-// 7. 404 Handler
+// 8. 404 Handler
 app.use((req, res) => {
     res.status(404).json({ error: 'Endpoint not found', path: req.originalUrl || req.url });
 });
 
-// 8. Global Error Handler Middleware
+// 9. Global Error Handler Middleware
 app.use((err, req, res, next) => {
     console.error('🔥 GLOBAL ERROR:', err.stack || err.message);
     res.status(err.status || 500).json({
@@ -160,7 +188,7 @@ app.use((err, req, res, next) => {
     });
 });
 
-// 9. Process Safety: Never exit process in serverless environments
+// 10. Process Safety: Never exit process in serverless environments
 process.on('uncaughtException', (err) => {
     console.error('💥 UNCAUGHT EXCEPTION:', err.name, err.message);
     if (!process.env.VERCEL) {
@@ -175,7 +203,7 @@ process.on('unhandledRejection', (reason) => {
     }
 });
 
-// 10. Start local HTTP server outside Vercel
+// 11. Start local HTTP server outside Vercel
 const PORT = process.env.PORT || 5000;
 if (!process.env.VERCEL && require.main === module) {
     app.listen(PORT, () => {

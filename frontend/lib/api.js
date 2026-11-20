@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const getBaseURL = () => {
-    // Always use the full backend URL directly (works on Hostinger, Vercel, and everywhere)
-    return process.env.NEXT_PUBLIC_API_URL || 'https://el-amid-api.vercel.app/api';
+    // Live production backend URL
+    return process.env.NEXT_PUBLIC_API_URL || 'https://elamid.vercel.app/api';
 };
 
 const api = axios.create({

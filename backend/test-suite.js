@@ -87,33 +87,59 @@ async function runTests() {
         assert.ok(!clean2.includes('p@ssword!'), 'Password should be masked');
     });
 
-    // TEST 2: CORS Preflight (OPTIONS)
-    await itAsync('Handles OPTIONS preflight from production frontend cleanly without DB', async () => {
+    // TEST 2: Preflight OPTIONS on /auth/login/admin for https://www.mrahmed-shendy.com returns 204
+    await itAsync('OPTIONS /auth/login/admin returns HTTP 204 for https://www.mrahmed-shendy.com', async () => {
         const req = {
             method: 'OPTIONS',
-            url: '/api/auth/login/admin',
-            path: '/api/auth/login/admin',
+            url: '/auth/login/admin',
+            path: '/auth/login/admin',
             headers: {
-                origin: 'https://mrahmed-shendy.com',
+                origin: 'https://www.mrahmed-shendy.com',
                 'access-control-request-method': 'POST',
-                'access-control-request-headers': 'content-type,authorization,x-device-id'
+                'access-control-request-headers': 'Content-Type,Authorization,x-device-id'
             }
         };
         const res = createMockRes();
 
         await new Promise((resolve) => {
             app.handle(req, res, () => resolve());
-            // Preflight middleware ends the response directly
-            if (res.statusCode === 200 || res.statusCode === 204) resolve();
+            if (res.statusCode === 204 || res.statusCode === 200) resolve();
         });
 
-        assert.strictEqual(res.headers['access-control-allow-origin'], 'https://mrahmed-shendy.com');
+        assert.strictEqual(res.statusCode, 204, 'Preflight must return HTTP 204, not 500 or 200');
+        assert.strictEqual(res.headers['access-control-allow-origin'], 'https://www.mrahmed-shendy.com');
         assert.strictEqual(res.headers['access-control-allow-credentials'], 'true');
         assert.ok(res.headers['access-control-allow-methods'].includes('POST'));
+        assert.ok(res.headers['access-control-allow-methods'].includes('OPTIONS'));
+        assert.ok(res.headers['access-control-allow-headers'].toLowerCase().includes('content-type'));
+        assert.ok(res.headers['access-control-allow-headers'].toLowerCase().includes('authorization'));
         assert.ok(res.headers['access-control-allow-headers'].toLowerCase().includes('x-device-id'));
     });
 
-    // TEST 3: CORS Preview Domain
+    // TEST 3: Preflight OPTIONS for root domain https://mrahmed-shendy.com
+    await itAsync('OPTIONS /auth/login/admin returns HTTP 204 for https://mrahmed-shendy.com', async () => {
+        const req = {
+            method: 'OPTIONS',
+            url: '/auth/login/admin',
+            path: '/auth/login/admin',
+            headers: {
+                origin: 'https://mrahmed-shendy.com',
+                'access-control-request-method': 'POST'
+            }
+        };
+        const res = createMockRes();
+
+        await new Promise((resolve) => {
+            app.handle(req, res, () => resolve());
+            if (res.statusCode === 204) resolve();
+        });
+
+        assert.strictEqual(res.statusCode, 204);
+        assert.strictEqual(res.headers['access-control-allow-origin'], 'https://mrahmed-shendy.com');
+        assert.strictEqual(res.headers['access-control-allow-credentials'], 'true');
+    });
+
+    // TEST 4: Allows Vercel preview domains safely
     await itAsync('Allows Vercel preview deployments safely', async () => {
         const req = {
             method: 'OPTIONS',
@@ -128,14 +154,15 @@ async function runTests() {
 
         await new Promise((resolve) => {
             app.handle(req, res, () => resolve());
-            if (res.statusCode === 200 || res.statusCode === 204) resolve();
+            if (res.statusCode === 204) resolve();
         });
 
+        assert.strictEqual(res.statusCode, 204);
         assert.strictEqual(res.headers['access-control-allow-origin'], 'https://el-amid-platform-git-preview-test.vercel.app');
         assert.strictEqual(res.headers['access-control-allow-credentials'], 'true');
     });
 
-    // TEST 4: CORS Block Unauthorized Origin
+    // TEST 5: Blocks unauthorized origins cleanly without 500 error
     await itAsync('Blocks unauthorized origins without throwing 500 error', async () => {
         const req = {
             method: 'OPTIONS',
@@ -150,14 +177,14 @@ async function runTests() {
 
         await new Promise((resolve) => {
             app.handle(req, res, () => resolve());
-            setTimeout(resolve, 100);
+            setTimeout(resolve, 50);
         });
 
         assert.strictEqual(res.headers['access-control-allow-origin'], undefined);
         assert.notStrictEqual(res.statusCode, 500);
     });
 
-    // TEST 5: Health Check works without DB
+    // TEST 6: Health check responds UP even when DB is disconnected
     await itAsync('Health check responds UP even when DB is disconnected', async () => {
         const req = {
             method: 'GET',
@@ -169,14 +196,14 @@ async function runTests() {
 
         await new Promise((resolve) => {
             app.handle(req, res, () => resolve());
-            setTimeout(resolve, 100);
+            setTimeout(resolve, 50);
         });
 
         assert.strictEqual(res.statusCode, 200);
         assert.strictEqual(res.body.status, 'UP');
     });
 
-    // TEST 6: Route dual-mounting (/api/auth and /auth)
+    // TEST 7: Route dual-mounting (/api/auth and /auth)
     it('Routes are mounted for both /api/auth and /auth', () => {
         const routes = [];
         app._router.stack.forEach((layer) => {
@@ -190,25 +217,29 @@ async function runTests() {
         assert.ok(hasAuth, 'Auth router should be mounted');
     });
 
-    // TEST 7: Serverless entry point
-    it('Vercel serverless entry point api/index.js exports express app', () => {
-        const serverlessApp = require('./api/index');
-        assert.strictEqual(typeof serverlessApp, 'function');
-        assert.strictEqual(typeof serverlessApp.handle, 'function');
+    // TEST 8: Vercel serverless entry points
+    it('Both backend/api/index.js and root api/index.js export express app', () => {
+        const backendServerlessApp = require('./api/index');
+        assert.strictEqual(typeof backendServerlessApp, 'function');
+        assert.strictEqual(typeof backendServerlessApp.handle, 'function');
+
+        const rootServerlessApp = require('../api/index');
+        assert.strictEqual(typeof rootServerlessApp, 'function');
+        assert.strictEqual(typeof rootServerlessApp.handle, 'function');
     });
 
-    // TEST 8: Admin login endpoint with DB unavailable returns 503 and CORS headers
+    // TEST 9: Admin login endpoint with DB unavailable returns 503 + CORS headers
     await itAsync('POST /auth/login/admin returns 503 + CORS headers when DB is unavailable', async () => {
         const mongoose = require('mongoose');
         Object.defineProperty(mongoose.connection, 'readyState', { value: 0, configurable: true });
-        process.env.MONGODB_URI = ''; // simulate invalid/missing DB configuration
+        process.env.MONGODB_URI = ''; // simulate unavailable DB
 
         const req = {
             method: 'POST',
             url: '/auth/login/admin',
             path: '/auth/login/admin',
             headers: {
-                origin: 'https://mrahmed-shendy.com',
+                origin: 'https://www.mrahmed-shendy.com',
                 'content-type': 'application/json'
             },
             body: { username: 'admin', password: '123' }
@@ -217,16 +248,16 @@ async function runTests() {
 
         await new Promise((resolve) => {
             app.handle(req, res, () => resolve());
-            setTimeout(resolve, 200);
+            setTimeout(resolve, 100);
         });
 
         assert.strictEqual(res.statusCode, 503);
-        assert.strictEqual(res.headers['access-control-allow-origin'], 'https://mrahmed-shendy.com');
+        assert.strictEqual(res.headers['access-control-allow-origin'], 'https://www.mrahmed-shendy.com');
         assert.strictEqual(res.headers['access-control-allow-credentials'], 'true');
         assert.strictEqual(res.body.error, 'Database connection failed');
     });
 
-    // TEST 9: Admin login endpoint validation when connected
+    // TEST 10: Admin login endpoint reaches controller and validates credentials
     await itAsync('POST /auth/login/admin validates empty username/password with 400', async () => {
         const mongoose = require('mongoose');
         Object.defineProperty(mongoose.connection, 'readyState', { value: 1, configurable: true });
@@ -236,7 +267,7 @@ async function runTests() {
             url: '/auth/login/admin',
             path: '/auth/login/admin',
             headers: {
-                origin: 'https://el-amid-platform.vercel.app',
+                origin: 'https://www.mrahmed-shendy.com',
                 'content-type': 'application/json'
             },
             body: { username: '', password: '' }
@@ -245,12 +276,13 @@ async function runTests() {
 
         await new Promise((resolve) => {
             app.handle(req, res, () => resolve());
-            setTimeout(resolve, 200);
+            setTimeout(resolve, 100);
         });
 
         assert.strictEqual(res.statusCode, 400);
-        assert.strictEqual(res.headers['access-control-allow-origin'], 'https://el-amid-platform.vercel.app');
+        assert.strictEqual(res.headers['access-control-allow-origin'], 'https://www.mrahmed-shendy.com');
         assert.strictEqual(res.headers['access-control-allow-credentials'], 'true');
+        assert.ok(res.body.error.includes('اسم المستخدم'));
     });
 
     console.log(`\n--- Verification Complete: ${passedTests}/${totalTests} Passed ---`);
